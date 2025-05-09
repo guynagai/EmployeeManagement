@@ -30,7 +30,11 @@
           <td th:text="${employee.email}"></td>
           <td th:text="${employee.phone}"></td>
           <td><a th:href="@{/admin/employees/edit/{id}(id=${employee.id})}">編集</a></td>
-          <td><button>削除</button></td>
+          <td>
+              <form th:action="@{/admin/employees/delete/{id}(id=${employee.id})}" method="post">
+                  <button type="submit">削除</button>
+              </form>
+          </td>
       </tr>
       </tbody>
   </table>

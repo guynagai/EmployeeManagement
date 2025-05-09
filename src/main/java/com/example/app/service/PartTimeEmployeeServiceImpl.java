@@ -31,4 +31,10 @@ import com.example.app.repository.PartTimeEmployeeRepository;
          public PartTimeEmployee save(PartTimeEmployee employee) {
              return repository.save(employee);
          }
+         
+         @Override
+         public void deleteById(Integer id) {
+             repository.deleteById(id);
+         }
+         
      }

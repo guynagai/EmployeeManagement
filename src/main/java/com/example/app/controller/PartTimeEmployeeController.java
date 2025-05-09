@@ -58,5 +58,12 @@ import com.example.app.service.PartTimeEmployeeService;
           service.save(employee);
           return "redirect:/admin/employees";
       }
+      
+      @PostMapping("/delete/{id}")
+      public String delete(@PathVariable Integer id) {
+          service.deleteById(id);
+          return "redirect:/admin/employees";
+      }
+      
   }
 

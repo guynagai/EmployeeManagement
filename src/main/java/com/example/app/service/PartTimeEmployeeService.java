@@ -11,4 +11,5 @@ import com.example.app.entity.PartTimeEmployee;
          Page<PartTimeEmployee> findAll(Pageable pageable);
          Optional<PartTimeEmployee> findById(Integer id);
          PartTimeEmployee save(PartTimeEmployee employee);
+         void deleteById(Integer id);
      }
