@@ -1,11 +1,15 @@
 package com.example.app.controller;
 
-  import org.springframework.stereotype.Controller;
+  import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.app.entity.PartTimeEmployee;
 import com.example.app.service.PartTimeEmployeeService;
@@ -20,8 +24,11 @@ import com.example.app.service.PartTimeEmployeeService;
       }
 
       @GetMapping({"", "/"})
-      public String list(Model model) {
-          model.addAttribute("employees", service.findAll());
+      public String list(@RequestParam(defaultValue = "0") int page, Model model) {
+          Pageable pageable = PageRequest.of(page, 10);
+          Page<PartTimeEmployee> employeePage = service.findAll(pageable);
+          model.addAttribute("employees", employeePage.getContent());
+          model.addAttribute("page", employeePage);
           return "employees/list";
       }
 
@@ -39,7 +46,7 @@ import com.example.app.service.PartTimeEmployeeService;
           service.save(employee);
           return "redirect:/admin/employees";
       }
-      
+
       @GetMapping("/add")
       public String addForm(Model model) {
           model.addAttribute("employee", new PartTimeEmployee());
@@ -50,7 +57,6 @@ import com.example.app.service.PartTimeEmployeeService;
       public String add(PartTimeEmployee employee) {
           service.save(employee);
           return "redirect:/admin/employees";
-      }   
-      
+      }
   }
 

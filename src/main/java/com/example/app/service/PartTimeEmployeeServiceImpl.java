@@ -1,8 +1,9 @@
 package com.example.app.service;
 
-     import java.util.List;
-import java.util.Optional;
+     import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.example.app.entity.PartTimeEmployee;
@@ -17,8 +18,8 @@ import com.example.app.repository.PartTimeEmployeeRepository;
          }
 
          @Override
-         public List<PartTimeEmployee> findAll() {
-             return repository.findAll();
+         public Page<PartTimeEmployee> findAll(Pageable pageable) {
+             return repository.findAll(pageable);
          }
 
          @Override
