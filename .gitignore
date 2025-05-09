@@ -1,14 +1,27 @@
- 
-.gradle/ 
-build/ 
-gradle/ 
-gradlew 
-gradlew.bat 
-.idea/ 
-*.iml 
-target/ 
-*.log 
-*.tmp 
-*.sql 
-*.db 
-.DS_Store 
+# Gradle
+.gradle/
+build/
+gradle/
+gradlew
+gradlew.bat
+
+# Eclipse
+bin/
+*.class
+.classpath
+.project
+.settings/
+
+# Other IDEs
+.idea/
+*.iml
+
+# Build tools
+target/
+
+# Temporary and log files
+*.log
+*.tmp
+*.sql
+*.db
+.DS_Store
