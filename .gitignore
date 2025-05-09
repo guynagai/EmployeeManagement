@@ -1,0 +1,14 @@
+ 
+.gradle/ 
+build/ 
+gradle/ 
+gradlew 
+gradlew.bat 
+.idea/ 
+*.iml 
+target/ 
+*.log 
+*.tmp 
+*.sql 
+*.db 
+.DS_Store 

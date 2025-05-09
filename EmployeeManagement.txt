@@ -1,0 +1,116 @@
+フォルダー パスの一覧:  ボリューム Local Disk
+ボリューム シリアル番号は 1451-1BEF です
+C:.
+│  .classpath
+│  .gitattributes
+│  .gitignore
+│  .project
+│  build.gradle
+│  EmployeeManagement.txt
+│  gradlew
+│  gradlew.bat
+│  HELP.md
+│  settings.gradle
+│  
+├─.gradle
+│  ├─8.13
+│  │  │  gc.properties
+│  │  │  
+│  │  ├─checksums
+│  │  │      checksums.lock
+│  │  │      md5-checksums.bin
+│  │  │      sha1-checksums.bin
+│  │  │      
+│  │  ├─executionHistory
+│  │  │      executionHistory.lock
+│  │  │      
+│  │  ├─expanded
+│  │  ├─fileChanges
+│  │  │      last-build.bin
+│  │  │      
+│  │  ├─fileHashes
+│  │  │      fileHashes.lock
+│  │  │      
+│  │  └─vcsMetadata
+│  ├─buildOutputCleanup
+│  │      buildOutputCleanup.lock
+│  │      cache.properties
+│  │      
+│  └─vcs-1
+│          gc.properties
+│          
+├─.settings
+│      org.eclipse.buildship.core.prefs
+│      org.eclipse.core.resources.prefs
+│      
+├─bin
+│  ├─main
+│  │  │  application.properties
+│  │  │  
+│  │  ├─com
+│  │  │  └─example
+│  │  │      └─app
+│  │  │          │  EmployeeManagementApplication.class
+│  │  │          │  
+│  │  │          ├─controller
+│  │  │          │      PartTimeEmployeeController.class
+│  │  │          │      
+│  │  │          ├─entity
+│  │  │          │      PartTimeEmployee.class
+│  │  │          │      
+│  │  │          ├─repository
+│  │  │          │      PartTimeEmployeeRepository.class
+│  │  │          │      
+│  │  │          └─service
+│  │  │                  PartTimeEmployeeService.class
+│  │  │                  
+│  │  └─templates
+│  │      └─employees
+│  │              list.html
+│  │              
+│  └─test
+│      └─com
+│          └─example
+│              └─app
+│                      EmployeeManagementApplicationTests.class
+│                      
+├─gradle
+│  └─wrapper
+│          gradle-wrapper.jar
+│          gradle-wrapper.properties
+│          
+└─src
+    ├─main
+    │  ├─java
+    │  │  └─com
+    │  │      └─example
+    │  │          └─app
+    │  │              │  EmployeeManagementApplication.java
+    │  │              │  
+    │  │              ├─controller
+    │  │              │      PartTimeEmployeeController.java
+    │  │              │      
+    │  │              ├─entity
+    │  │              │      PartTimeEmployee.java
+    │  │              │      
+    │  │              ├─repository
+    │  │              │      PartTimeEmployeeRepository.java
+    │  │              │      
+    │  │              └─service
+    │  │                      PartTimeEmployeeService.java
+    │  │                      
+    │  └─resources
+    │      │  application.properties
+    │      │  
+    │      ├─static
+    │      └─templates
+    │          └─employees
+    │                  list.html
+    │                  
+    └─test
+        └─java
+            └─com
+                └─example
+                    └─app
+                            EmployeeManagementApplicationTests.java
+                            

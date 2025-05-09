@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>パート社員一覧</title>
+</head>
+<body>
+    <h1>パート社員一覧</h1>
+    <a th:href="@{/admin/employees/add}">新規追加</a>
+    <table border="1">
+        <tr>
+            <th>ID</th>
+            <th>氏名（漢字）</th>
+            <th>氏名（ひらがな）</th>
+            <th>年齢</th>
+            <th>生年月日</th>
+            <th>性別</th>
+            <th>メールアドレス</th>
+            <th>携帯電話番号</th>
+            <th>操作</th>
+        </tr>
+        <tr th:each="employee : ${employees}">
+            <td th:text="${employee.id}">1</td>
+            <td th:text="${employee.nameKanji}">山田 太郎</td>
+            <td th:text="${employee.nameHiragana}">やまだ たろう</td>
+            <td th:text="${employee.age}">30</td>
+            <td th:text="${employee.birthdate}">1990-01-01</td>
+            <td th:text="${employee.gender}">男性</td>
+            <td th:text="${employee.email}">example@example.com</td>
+            <td th:text="${employee.phone}">090-1234-5678</td>
+            <td>
+                <a th:href="@{'/admin/employees/edit/' + ${employee.id}}">編集</a>
+                <a th:href="@{'/admin/employees/delete/' + ${employee.id}}">削除</a>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>パート社員フォーム</title>
+</head>
+<body>
+    <h1>パート社員フォーム</h1>
+    <form th:action="@{/admin/employees/save}" th:object="${employee}" method="post">
+        <input type="hidden" th:field="*{id}" />
+        <label>氏名（漢字）:</label>
+        <input type="text" th:field="*{nameKanji}" /><br/>
+        <label>氏名（ひらがな）:</label>
+        <input type="text" th:field="*{nameHiragana}" /><br/>
+        <label>年齢:</label>
+        <input type="number" th:field="*{age}" /><br/>
+        <label>生年月日:</label>
+        <input type="date" th:field="*{birthdate}" /><br/>
+        <label>性別:</label>
+        <input type="text" th:field="*{gender}" /><br/>
+        <label>メールアドレス:</label>
+        <input type="email" th:field="*{email}" /><br/>
+        <label>携帯電話番号:</label>
+        <input type="text" th:field="*{phone}" /><br/>
+        <button type="submit">保存</button>
+    </form>
+    <a th:href="@{/admin/employees}">戻る</a>
+</body>
+</html>

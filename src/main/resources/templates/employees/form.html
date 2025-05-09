@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>社員登録</title></head>
+<body>
+<h1>パート社員登録</h1>
+<form th:action="@{/admin/employees/save}" th:object="${employee}" method="post">
+    <input type="hidden" th:field="*{id}" />
+    <table>
+        <tr>
+            <th>氏名（漢字）</th>
+            <td><input type="text" th:field="*{nameKanji}" /></td>
+        </tr>
+        <tr>
+            <th>メールアドレス</th>
+            <td><input type="email" th:field="*{email}" /></td>
+        </tr>
+    </table>
+    <button type="submit">保存</button>
+    <a th:href="@{/admin/employees}">戻る</a>
+</form>
+</body>
+</html>
