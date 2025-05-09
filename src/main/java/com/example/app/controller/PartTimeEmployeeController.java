@@ -39,5 +39,18 @@ import com.example.app.service.PartTimeEmployeeService;
           service.save(employee);
           return "redirect:/admin/employees";
       }
+      
+      @GetMapping("/add")
+      public String addForm(Model model) {
+          model.addAttribute("employee", new PartTimeEmployee());
+          return "employees/add";
+      }
+
+      @PostMapping("/add")
+      public String add(PartTimeEmployee employee) {
+          service.save(employee);
+          return "redirect:/admin/employees";
+      }   
+      
   }
 
