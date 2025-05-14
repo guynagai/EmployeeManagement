@@ -1,67 +1,68 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
+    <meta charset="UTF-8">
     <title>シフト割り当て結果</title>
-    <style>
-        .section { margin-bottom: 20px; }
-        .error { color: red; }
-        table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-    </style>
 </head>
 <body>
-    <div class="section">
-        <h2>シフト割り当て結果</h2>
-        <div th:if="${error}" class="error">
-            <p th:text="${error}"></p>
-        </div>
-        <p>作業日: <span th:text="${#temporals.format(workDate, 'yyyy-MM-dd')}"></span></p>
+    <h1>シフト割り当て結果</h1>
+    <h2>作業日: <span th:text="${workDate.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd'))}"></span></h2>
 
-        <h3>割り当て</h3>
-        <table>
+    <h3>割り当て</h3>
+    <table border="1">
+        <tr>
+            <th>職場</th>
+            <th>タスク</th>
+            <th>AM 人数</th>
+            <th>PM 人数</th>
+        </tr>
+        <th:block th:each="entry : ${assignments}">
             <tr>
-                <th>職場</th>
-                <th>タスク</th>
-                <th>AM 人数</th>
-                <th>PM 人数</th>
+                <td th:text="${workplaces[entry.key]}"></td>
+                <td th:text="${entry.value.get('tasks') != null} ? ${T(java.lang.String).join(', ', entry.value.get('tasks'))} : 'なし'"></td>
+                <td th:text="${entry.value.get('am_count') ?: 0}"></td>
+                <td th:text="${entry.value.get('pm_count') ?: 0}"></td>
             </tr>
-            <tr th:each="workplace, iterStat : ${workplaces}">
-                <td th:text="${workplace}"></td>
-                <td th:text="${assignments[iterStat.index].tasks != null ? assignments[iterStat.index].tasks.join(', ') : '-'}"></td>
-                <td th:text="${assignments[iterStat.index].morning_count != null ? assignments[iterStat.index].morning_count : '0'}"></td>
-                <td th:text="${assignments[iterStat.index].afternoon_count != null ? assignments[iterStat.index].afternoon_count : '0'}"></td>
+        </th:block>
+        <th:block th:if="${#maps.isEmpty(assignments)}">
+            <tr>
+                <td colspan="4">割り当てなし</td>
             </tr>
-        </table>
+        </th:block>
+    </table>
 
-        <h3>出勤予定社員</h3>
-        <table>
+    <h3>出勤予定社員</h3>
+    <table border="1">
+        <tr>
+            <th>社員ID</th>
+            <th>名前</th>
+            <th>スキルレベル</th>
+            <th>時間帯</th>
+        </tr>
+        <th:block th:each="employee : ${availableEmployees}">
             <tr>
-                <th>社員ID</th>
-                <th>名前</th>
-                <th>スキルレベル</th>
-                <th>時間帯</th>
-            </tr>
-            <tr th:each="employee : ${availableEmployees}">
                 <td th:text="${employee.key}"></td>
-                <td th:text="${employee.value.name}"></td>
-                <td th:text="${employee.value.skillLevel}"></td>
-                <td th:text="${employee.value.timeSlots != null ? employee.value.timeSlots.join(', ') : '-'}"></td>
+                <td th:text="${employee.value.get('name')}"></td>
+                <td th:text="${employee.value.get('skillLevel')}"></td>
+                <td th:text="${T(java.lang.String).join(', ', employee.value.get('timeSlots'))}"></td>
             </tr>
-            <tr th:if="${availableEmployees == null or availableEmployees.isEmpty}">
+        </th:block>
+        <th:block th:if="${#maps.isEmpty(availableEmployees)}">
+            <tr>
                 <td colspan="4">出勤予定社員なし</td>
             </tr>
-        </table>
+        </th:block>
+    </table>
 
-        <h3>人数集計</h3>
-        <ul>
-            <li>リーダー: <span th:text="${employeeCounts.leader ?: 0}"></span></li>
-            <li>一般: <span th:text="${employeeCounts.general ?: 0}"></span></li>
-            <li>新人: <span th:text="${employeeCounts.newcomer ?: 0}"></span></li>
-            <li>AM 合計: <span th:text="${employeeCounts.amTotal ?: 0}"></span></li>
-            <li>PM 合計: <span th:text="${employeeCounts.pmTotal ?: 0}"></span></li>
-        </ul>
-    </div>
-    <a th:href="@{/admin/shifts/assign}">戻る</a>
+    <h3>人数集計</h3>
+    <ul>
+        <li>リーダー: <span th:text="${employeeCounts.get('leader')}"></span></li>
+        <li>一般: <span th:text="${employeeCounts.get('general')}"></span></li>
+        <li>新人: <span th:text="${employeeCounts.get('newcomer')}"></span></li>
+        <li>AM 合計: <span th:text="${employeeCounts.get('amTotal')}"></span></li>
+        <li>PM 合計: <span th:text="${employeeCounts.get('pmTotal')}"></span></li>
+    </ul>
+
+    <a href="/admin/shifts/assign">戻る</a>
 </body>
 </html>

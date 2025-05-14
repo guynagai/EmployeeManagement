@@ -83,6 +83,11 @@ public class ShiftController {
                     Matcher countMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[(\\w+)\\]\\[count\\]").matcher(key);
                     if (countMatcher.matches()) {
                         Long workplaceId = Long.parseLong(countMatcher.group(1));
+                        if (workplaceId < 0 || workplaceId >= 5) { // workplaces の範囲チェック
+                            logger.error("Invalid workplaceId: {}", workplaceId);
+                            model.addAttribute("error", "無効な職場ID: " + workplaceId);
+                            return setupFormModel(model, workDate);
+                        }
                         String timeSlot = countMatcher.group(2);
                         logger.debug("Parsed count: workplaceId={}, timeSlot={}, count={}", workplaceId, timeSlot, value);
 
@@ -103,6 +108,11 @@ public class ShiftController {
                     Matcher taskMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[tasks\\]\\[\\]").matcher(key);
                     if (taskMatcher.matches()) {
                         Long workplaceId = Long.parseLong(taskMatcher.group(1));
+                        if (workplaceId < 0 || workplaceId >= 5) {
+                            logger.error("Invalid workplaceId for task: {}", workplaceId);
+                            model.addAttribute("error", "無効な職場ID: " + workplaceId);
+                            return setupFormModel(model, workDate);
+                        }
                         logger.debug("Parsed task: workplaceId={}, taskId={}", workplaceId, value);
 
                         Map<String, Object> workplaceData = workplaceAssignments.computeIfAbsent(workplaceId, k -> new HashMap<>());
@@ -171,13 +181,10 @@ public class ShiftController {
                     continue;
                 }
                 Map<String, Object> employeeData = availableEmployees.computeIfAbsent(employeeId, k -> new HashMap<>());
-                employeeData.put("name", employee.getNameKanji());
-                employeeData.put("skillLevel", employee.getSkillLevel() != null ? employee.getSkillLevel().toString() : "UNKNOWN");
-                List<String> timeSlots = employeeData.containsKey("timeSlots")
-                        ? (List<String>) employeeData.get("timeSlots")
-                        : new ArrayList<>();
+                employeeData.putIfAbsent("name", employee.getNameKanji() != null ? employee.getNameKanji() : "不明");
+                employeeData.putIfAbsent("skillLevel", employee.getSkillLevel() != null ? employee.getSkillLevel().toString() : "UNKNOWN");
+                List<String> timeSlots = (List<String>) employeeData.computeIfAbsent("timeSlots", k -> new ArrayList<>());
                 timeSlots.add(shift.getTimeSlot().toString());
-                employeeData.put("timeSlots", timeSlots);
             }
 
             // 人数集計
@@ -209,7 +216,7 @@ public class ShiftController {
 
         } catch (Exception e) {
             logger.error("Failed to process shift assignment: {}", e.getMessage(), e);
-            model.addAttribute("error", "シフト割り当て処理中にエラーが発生しました: " + e.getMessage());
+            model.addAttribute("error", "シフト割り当て処理中にエラーが発生しました: " + e.getClass().getSimpleName() + " - " + e.getMessage());
             return setupFormModel(model, workDate != null ? workDate : LocalDate.now());
         }
     }
