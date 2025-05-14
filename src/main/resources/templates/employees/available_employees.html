@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+   <html xmlns:th="http://www.thymeleaf.org">
+   <head>
+       <title>Available Employees</title>
+       <style>
+           table { border-collapse: collapse; width: 100%; }
+           th, td { border: 1px solid black; padding: 8px; text-align: left; }
+           th { background-color: #f2f2f2; }
+       </style>
+   </head>
+   <body>
+       <h2>出勤予定者一覧</h2>
+       <p>作業日: <span th:text="${#temporals.format(workDate, 'yyyy年MM月dd日 (E)')}"></span></p>
+       <table>
+           <tr>
+               <th>社員名</th>
+               <th>スキルレベル</th>
+               <th>希望時間帯</th>
+           </tr>
+           <tr th:each="employee : ${employees}">
+               <td th:text="${employee.nameKanji}"></td>
+               <td th:text="${employee.skillLevel != null} ? ${employee.skillLevel} : '未設定'"></td>
+               <td>
+                   <span th:each="shift, iterStat : ${preferredShifts}"
+                         th:if="${shift.employeeId == employee.id}"
+                         th:text="${shift.timeSlot} + (${iterStat.last ? '' : ', '})">
+                   </span>
+               </td>
+           </tr>
+       </table>
+       <p>
+           リーダー: <span th:text="${leaderCount}"></span>人,
+           一般: <span th:text="${generalCount}"></span>人,
+           新人: <span th:text="${newcomerCount}"></span>人,
+           AM合計: <span th:text="${totalCountAM}"></span>人,
+           PM合計: <span th:text="${totalCountPM}"></span>人
+       </p>
+       <a th:href="@{/admin/shifts/assign(workDate=${#temporals.format(workDate, 'yyyy-MM-dd')})}">シフト割り当て</a>
+       <a href="/admin/employees">社員一覧に戻る</a>
+   </body>
+   </html>

@@ -41,7 +41,7 @@ import com.example.app.service.PartTimeEmployeeService;
       }
 
       @PostMapping("/edit/{id}")
-      public String update(@PathVariable Integer id, PartTimeEmployee employee) {
+      public String update(@PathVariable Long id, PartTimeEmployee employee) {
           employee.setId(id);
           service.save(employee);
           return "redirect:/admin/employees";

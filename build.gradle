@@ -30,3 +30,10 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    options.incremental = true // デバッグ中はインクリメンタルビルド
+    options.debug = true
+    options.debugOptions.debugLevel = 'source,lines,vars'
+}

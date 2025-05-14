@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>シフト割り当て結果</title>
+    <meta charset="UTF-8">
+</head>
+<body>
+    <h1>シフト割り当て結果</h1>
+    <p>作業日: <span th:text="${workDate}"></span></p>
+    <h2>パース結果</h2>
+    <div th:if="${assignments.isEmpty()}">パースデータなし</div>
+    <div th:each="entry : ${assignments}">
+        <h3 th:text="'ハウス1 (Workplace ' + ${entry.key} + ')'"></h3>
+        <ul th:each="slot : ${entry.value}">
+            <li th:text="${slot.key} + ': ' + ${slot.value.count} + '人 (' + ${slot.value.task} + ')'"></li>
+        </ul>
+    </div>
+    <h2>送信データ（生データ）</h2>
+    <ul>
+        <li th:each="entry : ${formData}" th:text="${entry.key} + ': ' + ${entry.value}"></li>
+    </ul>
+    <a href="/admin/shifts/assign">戻る</a>
+</body>
+</html>

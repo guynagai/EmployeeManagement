@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+     <html xmlns:th="http://www.thymeleaf.org">
+     <head>
+         <title>シフト割り当て</title>
+         <meta charset="UTF-8">
+         <style>
+             .workplace { margin-bottom: 20px; }
+             .timeslot { margin-left: 20px; }
+         </style>
+     </head>
+     <body>
+         <h1>シフト割り当て</h1>
+         <form th:action="@{/admin/shifts/assign}" method="post">
+             <label>作業日: <input type="date" name="workDate" th:value="${workDate}" required></label>
+             <div th:each="workplace, iter : ${workplaces}" class="workplace">
+                 <h3 th:text="${workplace}"></h3>
+                 <div class="timeslot">
+                     <h4>AM</h4>
+                     <label>人数: <input type="number" th:name="'assignments[' + ${iter.index} + '][AM][count]'" min="0" required></label>
+                     <label>作業: <select th:name="'assignments[' + ${iter.index} + '][AM][task]'" required>
+                         <option th:each="task : ${tasks}" th:value="${task}" th:text="${task}"></option>
+                     </select></label>
+                 </div>
+                 <div class="timeslot">
+                     <h4>PM</h4>
+                     <label>人数: <input type="number" th:name="'assignments[' + ${iter.index} + '][PM][count]'" min="0" required></label>
+                     <label>作業: <select th:name="'assignments[' + ${iter.index} + '][PM][task]'" required>
+                         <option th:each="task : ${tasks}" th:value="${task}" th:text="${task}"></option>
+                     </select></label>
+                 </div>
+             </div>
+             <button type="submit">割り当て</button>
+         </form>
+         <a href="/admin/employees">戻る</a>
+     </body>
+     </html>
