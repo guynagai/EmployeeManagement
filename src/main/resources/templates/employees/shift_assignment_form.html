@@ -1,36 +1,100 @@
 <!DOCTYPE html>
-     <html xmlns:th="http://www.thymeleaf.org">
-     <head>
-         <title>シフト割り当て</title>
-         <meta charset="UTF-8">
-         <style>
-             .workplace { margin-bottom: 20px; }
-             .timeslot { margin-left: 20px; }
-         </style>
-     </head>
-     <body>
-         <h1>シフト割り当て</h1>
-         <form th:action="@{/admin/shifts/assign}" method="post">
-             <label>作業日: <input type="date" name="workDate" th:value="${workDate}" required></label>
-             <div th:each="workplace, iter : ${workplaces}" class="workplace">
-                 <h3 th:text="${workplace}"></h3>
-                 <div class="timeslot">
-                     <h4>AM</h4>
-                     <label>人数: <input type="number" th:name="'assignments[' + ${iter.index} + '][AM][count]'" min="0" required></label>
-                     <label>作業: <select th:name="'assignments[' + ${iter.index} + '][AM][task]'" required>
-                         <option th:each="task : ${tasks}" th:value="${task}" th:text="${task}"></option>
-                     </select></label>
-                 </div>
-                 <div class="timeslot">
-                     <h4>PM</h4>
-                     <label>人数: <input type="number" th:name="'assignments[' + ${iter.index} + '][PM][count]'" min="0" required></label>
-                     <label>作業: <select th:name="'assignments[' + ${iter.index} + '][PM][task]'" required>
-                         <option th:each="task : ${tasks}" th:value="${task}" th:text="${task}"></option>
-                     </select></label>
-                 </div>
-             </div>
-             <button type="submit">割り当て</button>
-         </form>
-         <a href="/admin/employees">戻る</a>
-     </body>
-     </html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>シフト割り当て</title>
+    <style>
+        .workplace-section {
+            margin-bottom: 12px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .time-slot {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 8px;
+        }
+        .task-checkbox-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 5px;
+        }
+        .task-checkbox {
+            margin-right: 15px;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+        label {
+            margin-right: 8px;
+        }
+        input[type="number"] {
+            width: 50px;
+        }
+        h3, h4 {
+            margin: 4px 0;
+        }
+        .error {
+            color: red;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <h2>シフト割り当て</h2>
+        <form th:action="@{/admin/shifts/assign}" method="post">
+            <div>
+                <label>作業日: </label>
+                <input type="date" name="workDate" th:value="${#temporals.format(workDate, 'yyyy-MM-dd')}" required />
+            </div>
+            <div th:if="${error}" class="error">
+                <p th:text="${error}"></p>
+            </div>
+
+            <div th:each="workplace, iterStat : ${workplaces}">
+                <div class="workplace-section">
+                    <h3 th:text="${workplace}"></h3>
+                    <div th:if="${workplace != '選果場'}">
+                        <label>作業: </label>
+                        <div class="task-checkbox-row">
+                            <div th:each="task : ${tasks}" th:if="${task.id <= 5}" class="task-checkbox">
+                                <input type="checkbox" th:name="'assignments[' + ${iterStat.index} + '][tasks][]'" 
+                                       th:value="${task.id}" th:text="${task.name}" />
+                            </div>
+                        </div>
+                        <div class="task-checkbox-row">
+                            <div th:each="task : ${tasks}" th:if="${task.id > 5 and task.id <= 10}" class="task-checkbox">
+                                <input type="checkbox" th:name="'assignments[' + ${iterStat.index} + '][tasks][]'" 
+                                       th:value="${task.id}" th:text="${task.name}" />
+                            </div>
+                        </div>
+                    </div>
+                    <div th:if="${workplace == '選果場'}">
+                        <input type="hidden" th:name="'assignments[' + ${iterStat.index} + '][tasks][]'" value="11" />
+                        <span>選果 (固定)</span>
+                    </div>
+                    <div class="time-slot">
+                        <div>
+                            <label>AM 人数: </label>
+                            <input type="number" th:name="'assignments[' + ${iterStat.index} + '][morning][count]'" value="0" min="0" required pattern="\d+" />
+                        </div>
+                        <div>
+                            <label>PM 人数: </label>
+                            <input type="number" th:name="'assignments[' + ${iterStat.index} + '][afternoon][count]'" value="0" min="0" required pattern="\d+" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit">割り当て</button>
+        </form>
+
+        <a th:href="@{/admin/shifts/assign}">戻る</a>
+    </div>
+</body>
+</html>

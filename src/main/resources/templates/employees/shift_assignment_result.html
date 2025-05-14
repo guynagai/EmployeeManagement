@@ -2,23 +2,66 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>シフト割り当て結果</title>
-    <meta charset="UTF-8">
+    <style>
+        .section { margin-bottom: 20px; }
+        .error { color: red; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
 </head>
 <body>
-    <h1>シフト割り当て結果</h1>
-    <p>作業日: <span th:text="${workDate}"></span></p>
-    <h2>パース結果</h2>
-    <div th:if="${assignments.isEmpty()}">パースデータなし</div>
-    <div th:each="entry : ${assignments}">
-        <h3 th:text="'ハウス1 (Workplace ' + ${entry.key} + ')'"></h3>
-        <ul th:each="slot : ${entry.value}">
-            <li th:text="${slot.key} + ': ' + ${slot.value.count} + '人 (' + ${slot.value.task} + ')'"></li>
+    <div class="section">
+        <h2>シフト割り当て結果</h2>
+        <div th:if="${error}" class="error">
+            <p th:text="${error}"></p>
+        </div>
+        <p>作業日: <span th:text="${#temporals.format(workDate, 'yyyy-MM-dd')}"></span></p>
+
+        <h3>割り当て</h3>
+        <table>
+            <tr>
+                <th>職場</th>
+                <th>タスク</th>
+                <th>AM 人数</th>
+                <th>PM 人数</th>
+            </tr>
+            <tr th:each="workplace, iterStat : ${workplaces}">
+                <td th:text="${workplace}"></td>
+                <td th:text="${assignments[iterStat.index].tasks != null ? assignments[iterStat.index].tasks.join(', ') : '-'}"></td>
+                <td th:text="${assignments[iterStat.index].morning_count != null ? assignments[iterStat.index].morning_count : '0'}"></td>
+                <td th:text="${assignments[iterStat.index].afternoon_count != null ? assignments[iterStat.index].afternoon_count : '0'}"></td>
+            </tr>
+        </table>
+
+        <h3>出勤予定社員</h3>
+        <table>
+            <tr>
+                <th>社員ID</th>
+                <th>名前</th>
+                <th>スキルレベル</th>
+                <th>時間帯</th>
+            </tr>
+            <tr th:each="employee : ${availableEmployees}">
+                <td th:text="${employee.key}"></td>
+                <td th:text="${employee.value.name}"></td>
+                <td th:text="${employee.value.skillLevel}"></td>
+                <td th:text="${employee.value.timeSlots != null ? employee.value.timeSlots.join(', ') : '-'}"></td>
+            </tr>
+            <tr th:if="${availableEmployees == null or availableEmployees.isEmpty}">
+                <td colspan="4">出勤予定社員なし</td>
+            </tr>
+        </table>
+
+        <h3>人数集計</h3>
+        <ul>
+            <li>リーダー: <span th:text="${employeeCounts.leader ?: 0}"></span></li>
+            <li>一般: <span th:text="${employeeCounts.general ?: 0}"></span></li>
+            <li>新人: <span th:text="${employeeCounts.newcomer ?: 0}"></span></li>
+            <li>AM 合計: <span th:text="${employeeCounts.amTotal ?: 0}"></span></li>
+            <li>PM 合計: <span th:text="${employeeCounts.pmTotal ?: 0}"></span></li>
         </ul>
     </div>
-    <h2>送信データ（生データ）</h2>
-    <ul>
-        <li th:each="entry : ${formData}" th:text="${entry.key} + ': ' + ${entry.value}"></li>
-    </ul>
-    <a href="/admin/shifts/assign">戻る</a>
+    <a th:href="@{/admin/shifts/assign}">戻る</a>
 </body>
 </html>

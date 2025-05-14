@@ -1,41 +1,58 @@
 <!DOCTYPE html>
-   <html xmlns:th="http://www.thymeleaf.org">
-   <head>
-       <title>Available Employees</title>
-       <style>
-           table { border-collapse: collapse; width: 100%; }
-           th, td { border: 1px solid black; padding: 8px; text-align: left; }
-           th { background-color: #f2f2f2; }
-       </style>
-   </head>
-   <body>
-       <h2>出勤予定者一覧</h2>
-       <p>作業日: <span th:text="${#temporals.format(workDate, 'yyyy年MM月dd日 (E)')}"></span></p>
-       <table>
-           <tr>
-               <th>社員名</th>
-               <th>スキルレベル</th>
-               <th>希望時間帯</th>
-           </tr>
-           <tr th:each="employee : ${employees}">
-               <td th:text="${employee.nameKanji}"></td>
-               <td th:text="${employee.skillLevel != null} ? ${employee.skillLevel} : '未設定'"></td>
-               <td>
-                   <span th:each="shift, iterStat : ${preferredShifts}"
-                         th:if="${shift.employeeId == employee.id}"
-                         th:text="${shift.timeSlot} + (${iterStat.last ? '' : ', '})">
-                   </span>
-               </td>
-           </tr>
-       </table>
-       <p>
-           リーダー: <span th:text="${leaderCount}"></span>人,
-           一般: <span th:text="${generalCount}"></span>人,
-           新人: <span th:text="${newcomerCount}"></span>人,
-           AM合計: <span th:text="${totalCountAM}"></span>人,
-           PM合計: <span th:text="${totalCountPM}"></span>人
-       </p>
-       <a th:href="@{/admin/shifts/assign(workDate=${#temporals.format(workDate, 'yyyy-MM-dd')})}">シフト割り当て</a>
-       <a href="/admin/employees">社員一覧に戻る</a>
-   </body>
-   </html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>出勤予定者一覧</title>
+    <style>
+        .employee-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .employee-table th, .employee-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .summary {
+            margin-top: 10px;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <th:fragment name="available-employees">
+            <div>
+                <h3>出勤予定者一覧</h3>
+                <p>作業日: <span th:text="${#temporals.format(workDate, 'yyyy-MM-dd')}"></span></p>
+                <table class="employee-table">
+                    <tr>
+                        <th>社員名</th>
+                        <th>スキルレベル</th>
+                        <th>希望時間帯</th>
+                    </tr>
+                    <tr th:each="employee : ${availableEmployees.values()}">
+                        <td th:text="${employee.name}"></td>
+                        <td th:text="${employee.skillLevel}"></td>
+                        <td th:text="${employee.timeSlots.join(', ')}"></td>
+                    </tr>
+                    <tr th:if="${!availableEmployees}">
+                        <td colspan="3">出勤予定者なし</td>
+                    </tr>
+                </table>
+                <div class="summary">
+                    <p>リーダー: <span th:text="${employeeCounts.leader} ?: 0"></span> 人</p>
+                    <p>一般: <span th:text="${employeeCounts.general} ?: 0"></span> 人</p>
+                    <p>新人: <span th:text="${employeeCounts.newcomer} ?: 0"></span> 人</p>
+                    <p>AM合計: <span th:text="${employeeCounts.amTotal} ?: 0"></span> 人</p>
+                    <p>PM合計: <span th:text="${employeeCounts.pmTotal} ?: 0"></span> 人</p>
+                </div>
+            </div>
+        </th:fragment>
+    </div>
+</body>
+</html>

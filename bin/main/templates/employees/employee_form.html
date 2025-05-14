@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>パート社員フォーム</title>
+    <title>シフト割り当て</title>
+    <style>
+        .error { color: red; }
+    </style>
 </head>
 <body>
-    <h1>パート社員フォーム</h1>
-    <form th:action="@{/admin/employees/save}" th:object="${employee}" method="post">
-        <input type="hidden" th:field="*{id}" />
-        <label>氏名（漢字）:</label>
-        <input type="text" th:field="*{nameKanji}" /><br/>
-        <label>氏名（ひらがな）:</label>
-        <input type="text" th:field="*{nameHiragana}" /><br/>
-        <label>年齢:</label>
-        <input type="number" th:field="*{age}" /><br/>
-        <label>生年月日:</label>
-        <input type="date" th:field="*{birthdate}" /><br/>
-        <label>性別:</label>
-        <input type="text" th:field="*{gender}" /><br/>
-        <label>メールアドレス:</label>
-        <input type="email" th:field="*{email}" /><br/>
-        <label>携帯電話番号:</label>
-        <input type="text" th:field="*{phone}" /><br/>
-        <button type="submit">保存</button>
+    <h1>シフト割り当て</h1>
+    <h2 th:text="${workDate}"></h2>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+    <form th:action="@{/admin/shifts/assign}" method="post">
+        <input type="hidden" name="workDate" th:value="${workDate}" />
+        <div th:each="workplace : ${workplaces}">
+            <h3 th:text="${workplace.name}"></h3>
+            <div th:each="timeSlot : ${timeSlots}">
+                <label th:text="${timeSlot} + ':'"></label>
+                <input type="number" min="0"
+                       th:name="'assignments[' + ${workplace.id} + '][' + ${timeSlot} + '][count]'"
+                       value="0" />
+                <select th:name="'assignments[' + ${workplace.id} + '][' + ${timeSlot} + '][task]'">
+                    <option value="">タスクを選択</option>
+                    <option th:each="task : ${tasks}" th:value="${task.id}" th:text="${task.name}"></option>
+                </select>
+            </div>
+        </div>
+        <button type="submit">割り当て</button>
     </form>
-    <a th:href="@{/admin/employees}">戻る</a>
 </body>
 </html>
