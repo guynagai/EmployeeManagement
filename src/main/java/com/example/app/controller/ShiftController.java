@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import com.example.app.dto.ShiftAssignmentDto;
 import com.example.app.entity.PartTimeEmployee;
 import com.example.app.entity.PreferredShift;
+import com.example.app.entity.Task;
 import com.example.app.entity.Workplace;
 import com.example.app.repository.PartTimeEmployeeRepository;
 import com.example.app.repository.PreferredShiftRepository;
@@ -56,14 +57,34 @@ public class ShiftController {
             @RequestParam(value = "workDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workDate,
             Model model) {
         logger.info("Showing shift assignment form for workDate: {}", workDate);
+        logger.debug("Checking repository beans: workplaceRepository={}, taskRepository={}", 
+                     workplaceRepository != null, taskRepository != null);
         model.addAttribute("workDate", workDate != null ? workDate : LocalDate.now());
         try {
-            model.addAttribute("workplaces", workplaceRepository.findAll());
-            model.addAttribute("houseTasks", taskRepository.findByIdLessThanEqual(10L));
-            model.addAttribute("sortingTask", taskRepository.findByName("選果").orElse(null));
+            logger.debug("Fetching workplaces...");
+            List<Workplace> workplaces = workplaceRepository.findAll()
+                    .stream()
+                    .filter(w -> w != null && w.getId() != null)
+                    .collect(Collectors.toList());
+            logger.debug("Fetched {} workplaces: {}", workplaces.size(), workplaces);
+            for (Workplace wp : workplaces) {
+                logger.debug("Workplace: id={}, name={}", wp.getId(), wp.getName());
+            }
+            model.addAttribute("workplaces", workplaces);
+
+            logger.debug("Fetching first house tasks (id 1-5)...");
+            List<Task> firstHouseTasks = taskRepository.findByIdBetween(1L, 5L);
+            logger.debug("Fetched {} first house tasks: {}", firstHouseTasks.size(), firstHouseTasks);
+            model.addAttribute("firstHouseTasks", firstHouseTasks);
+
+            logger.debug("Fetching second house tasks (id 6-10)...");
+            List<Task> secondHouseTasks = taskRepository.findByIdBetween(6L, 10L);
+            logger.debug("Fetched {} second house tasks: {}", secondHouseTasks.size(), secondHouseTasks);
+            model.addAttribute("secondHouseTasks", secondHouseTasks);
         } catch (Exception e) {
             logger.error("Failed to load workplaces or tasks: {}", e.getMessage(), e);
             model.addAttribute("error", "職場またはタスクの取得に失敗しました: " + e.getMessage());
+            return "employees/shift_assignment_form";
         }
         return "employees/shift_assignment_form";
     }
@@ -73,28 +94,34 @@ public class ShiftController {
             @RequestParam(value = "workDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workDate,
             @RequestParam Map<String, String> allParams,
             Model model) {
+        logger.info("Processing shift assignment for workDate: {}", workDate);
+        logger.debug("Raw form parameters: {}", allParams);
+        Map<Long, ShiftAssignmentDto> assignments = new HashMap<>();
+        List<String> errors = new ArrayList<>();
         try {
             if (workDate == null) {
                 logger.warn("workDate parameter is missing or invalid, defaulting to today");
                 workDate = LocalDate.now();
-                model.addAttribute("error", "作業日が指定されていません。今日の日付を使用します。");
+                errors.add("作業日が指定されていません。今日の日付を使用します。");
             }
-            logger.info("Processing shift assignment for workDate: {}", workDate);
-            logger.debug("Raw form parameters: {}", allParams);
 
             Map<Long, String> workplaceNames = workplaceRepository.findAll().stream()
+                    .filter(w -> w != null && w.getId() != null)
                     .collect(Collectors.toMap(Workplace::getId, Workplace::getName));
+            logger.debug("Workplace names: {}", workplaceNames);
             Map<Long, Map<String, Object>> formAssignments = new HashMap<>();
 
-            // 未入力の職場をデフォルト0で初期化
+            // 未入力の職場を初期化
             for (Workplace workplace : workplaceRepository.findAll()) {
-                Map<String, Object> workplaceData = new HashMap<>();
-                workplaceData.put("am_count", 0);
-                workplaceData.put("pm_count", 0);
-                workplaceData.put("tasks", new ArrayList<String>());
-                workplaceData.put("taskIds", new ArrayList<Long>());
-                formAssignments.put(workplace.getId(), workplaceData);
-                logger.debug("Initialized workplaceId={} with default am_count=0, pm_count=0, tasks=[]", workplace.getId());
+                if (workplace != null && workplace.getId() != null) {
+                    Map<String, Object> workplaceData = new HashMap<>();
+                    workplaceData.put("am_count", 0);
+                    workplaceData.put("pm_count", 0);
+                    workplaceData.put("tasks", new ArrayList<String>());
+                    workplaceData.put("taskIds", new ArrayList<Long>());
+                    formAssignments.put(workplace.getId(), workplaceData);
+                    logger.debug("Initialized workplaceId={} with default am_count=0, pm_count=0, tasks={}", workplace.getId(), workplaceData.get("tasks"));
+                }
             }
 
             // フォームデータを処理
@@ -103,73 +130,90 @@ public class ShiftController {
                 String value = entry.getValue();
                 logger.debug("Processing key: {}, value: {}", key, value);
 
-                if (key.contains("${workplace.id}")) {
-                    logger.error("Unresolved workplace ID in key: {}. Possible template cache issue.", key);
-                    model.addAttribute("error", "フォームの職場IDが正しく解決されていません。フォームを確認し、キャッシュをクリアしてください。");
-                    return setupFormModel(model, workDate);
-                }
-
-                if (key.startsWith("assignments[")) {
-                    // 人数の処理
-                    Matcher countMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[(\\w+)\\]\\[count\\]").matcher(key);
-                    if (countMatcher.matches()) {
-                        Long workplaceId = Long.parseLong(countMatcher.group(1));
+                // workplaceIdの処理
+                Matcher workplaceIdMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[workplaceId\\]").matcher(key);
+                if (workplaceIdMatcher.matches()) {
+                    try {
+                        Long workplaceId = Long.parseLong(value.trim());
                         if (!workplaceNames.containsKey(workplaceId)) {
                             logger.error("Invalid workplaceId: {}", workplaceId);
-                            model.addAttribute("error", "無効な職場ID: " + workplaceId);
-                            return setupFormModel(model, workDate);
+                            errors.add("無効な職場ID: " + workplaceId);
+                            continue;
+                        }
+                        int index = Integer.parseInt(workplaceIdMatcher.group(1));
+                        formAssignments.computeIfAbsent(workplaceId, k -> new HashMap<>()).put("index", index);
+                        logger.debug("Set workplaceId={} for index={}", workplaceId, index);
+                    } catch (NumberFormatException e) {
+                        logger.error("Invalid workplaceId value for key={}: {}", key, value, e);
+                        errors.add("職場IDが無効です: " + value);
+                    }
+                }
+
+                // 人数の処理
+                Matcher countMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[(\\w+)\\]\\[count\\]").matcher(key);
+                if (countMatcher.matches()) {
+                    try {
+                        int index = Integer.parseInt(countMatcher.group(1));
+                        Long workplaceId = formAssignments.entrySet().stream()
+                                .filter(e -> e.getValue().get("index") != null && (int)e.getValue().get("index") == index)
+                                .map(Map.Entry::getKey)
+                                .findFirst()
+                                .orElse(null);
+                        if (workplaceId == null || !workplaceNames.containsKey(workplaceId)) {
+                            logger.error("No valid workplaceId found for index: {}", index);
+                            errors.add("無効なインデックス: " + index);
+                            continue;
                         }
                         String timeSlot = countMatcher.group(2);
                         Map<String, Object> workplaceData = formAssignments.get(workplaceId);
-                        try {
-                            int count = value.isEmpty() ? 0 : Integer.parseInt(value.trim());
-                            if (count < 0) {
-                                logger.error("Negative count value for workplaceId={}, timeSlot={}: {}", workplaceId, timeSlot, count);
-                                model.addAttribute("error", "人数は0以上でなければなりません: " + count);
-                                return setupFormModel(model, workDate);
-                            }
-                            workplaceData.put(timeSlot.toLowerCase() + "_count", count);
-                            logger.debug("Set {} for workplaceId={}, count={}", timeSlot.toLowerCase() + "_count", workplaceId, count);
-                        } catch (NumberFormatException e) {
-                            logger.error("Invalid count value for workplaceId={}, timeSlot={}: {}", workplaceId, timeSlot, value);
-                            model.addAttribute("error", "人数の入力値が無効です: " + value);
-                            return setupFormModel(model, workDate);
+                        int count = value.isEmpty() ? 0 : Integer.parseInt(value.trim());
+                        if (count < 0) {
+                            logger.error("Negative count value for workplaceId={}, timeSlot={}: {}", workplaceId, timeSlot, count);
+                            errors.add("人数は0以上でなければなりません: " + count + " (職場ID: " + workplaceId + ")");
+                            continue;
                         }
+                        workplaceData.put(timeSlot.toLowerCase() + "_count", count);
+                        logger.debug("Set {} for workplaceId={}, count={}", timeSlot.toLowerCase() + "_count", workplaceId, count);
+                    } catch (NumberFormatException e) {
+                        logger.error("Invalid count value for key={}: {}", key, value, e);
+                        errors.add("人数の入力値が無効です: " + value);
                     }
+                }
 
-                    // タスクの処理
-                    Matcher taskMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[tasks\\]\\[\\]").matcher(key);
-                    if (taskMatcher.matches()) {
-                        Long workplaceId = Long.parseLong(taskMatcher.group(1));
-                        if (!workplaceNames.containsKey(workplaceId)) {
-                            logger.error("Invalid workplaceId for task: {}", workplaceId);
-                            model.addAttribute("error", "無効な職場ID: " + workplaceId);
-                            return setupFormModel(model, workDate);
+                // タスクの処理（選果場は無視）
+                Matcher taskMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[tasks\\]\\[\\]").matcher(key);
+                if (taskMatcher.matches()) {
+                    try {
+                        int index = Integer.parseInt(taskMatcher.group(1));
+                        Long workplaceId = formAssignments.entrySet().stream()
+                                .filter(e -> e.getValue().get("index") != null && (int)e.getValue().get("index") == index)
+                                .map(Map.Entry::getKey)
+                                .findFirst()
+                                .orElse(null);
+                        if (workplaceId == null || !workplaceNames.containsKey(workplaceId)) {
+                            logger.error("No valid workplaceId found for task index: {}", index);
+                            errors.add("無効なインデックス: " + index);
+                            continue;
                         }
-                        Map<String, Object> workplaceData = formAssignments.get(workplaceId);
-                        List<String> taskNames = (List<String>) workplaceData.get("tasks");
-                        List<Long> taskIds = (List<Long>) workplaceData.get("taskIds");
-                        if (!value.isEmpty()) {
-                            try {
-                                Long taskId = Long.parseLong(value);
-                                taskRepository.findById(taskId).ifPresentOrElse(
-                                    task -> {
-                                        if (!taskIds.contains(taskId)) {
-                                            taskNames.add(task.getName());
-                                            taskIds.add(task.getId());
-                                            logger.debug("Added taskId={} ({}) for workplaceId={}", taskId, task.getName(), workplaceId);
-                                        } else {
-                                            logger.debug("TaskId={} already added for workplaceId={}", taskId, workplaceId);
-                                        }
-                                    },
-                                    () -> logger.warn("Task not found for taskId={} for workplaceId={}. Check tasks table.", taskId, workplaceId)
-                                );
-                            } catch (NumberFormatException e) {
-                                logger.error("Invalid task ID for workplaceId={}: {}", workplaceId, value);
-                                model.addAttribute("error", "タスクIDが無効です: " + value);
-                                return setupFormModel(model, workDate);
+                        if (!workplaceNames.get(workplaceId).equals("選果場")) {
+                            Map<String, Object> workplaceData = formAssignments.get(workplaceId);
+                            List<String> taskNames = (List<String>) workplaceData.computeIfAbsent("tasks", k -> new ArrayList<String>());
+                            List<Long> taskIds = (List<Long>) workplaceData.computeIfAbsent("taskIds", k -> new ArrayList<Long>());
+                            if (!value.isEmpty()) {
+                                final Long taskId = Long.parseLong(value);
+                                final Long finalWorkplaceId = workplaceId;
+                                taskRepository.findById(taskId).ifPresent(task -> {
+                                    if (!taskIds.contains(taskId) && taskId >= 1 && taskId <= 10) {
+                                        taskNames.add(task.getName());
+                                        taskIds.add(task.getId());
+                                        logger.debug("Added taskId={} ({}) for workplaceId={}", taskId, task.getName(), finalWorkplaceId);
+                                    }
+                                });
                             }
                         }
+                    } catch (NumberFormatException e) {
+                        logger.error("Invalid task ID for key={}: {}", key, value, e);
+                        errors.add("タスクIDが無効です: " + value);
                     }
                 }
             }
@@ -182,23 +226,32 @@ public class ShiftController {
                 dayOfWeek = PreferredShift.DayOfWeek.valueOf(
                         workDate.getDayOfWeek().toString().toUpperCase(Locale.ENGLISH));
             } catch (IllegalArgumentException e) {
-                logger.warn("No shifts available for day: {}", workDate.getDayOfWeek());
+                logger.warn("No shifts available for day: {}", workDate.getDayOfWeek(), e);
                 dayOfWeek = null;
+                errors.add("指定された曜日にシフトがありません: " + workDate.getDayOfWeek());
             }
             List<PreferredShift> preferredShifts = dayOfWeek != null
                     ? preferredShiftRepository.findByDayOfWeek(dayOfWeek)
                     : new ArrayList<>();
+            logger.debug("Found {} preferred shifts for dayOfWeek={}: {}", 
+                        preferredShifts.size(), dayOfWeek, preferredShifts);
             if (preferredShifts.isEmpty()) {
                 logger.warn("No preferred shifts found for dayOfWeek={}", dayOfWeek);
-            } else {
-                logger.debug("Found {} preferred shifts for dayOfWeek={}", preferredShifts.size(), dayOfWeek);
+                errors.add("指定された曜日の出勤希望シフトがありません。");
             }
             Map<Long, PartTimeEmployee> employees = partTimeEmployeeRepository.findAll().stream()
+                    .filter(e -> e != null && e.getId() != null)
                     .collect(Collectors.toMap(PartTimeEmployee::getId, employee -> employee));
+            logger.debug("Found {} employees: {}", employees.size(), employees.keySet());
 
             // 社員割り当て
-            Map<Long, ShiftAssignmentDto> assignments = shiftAssignmentService.assignEmployees(
-                    workDate, formAssignments, employees, preferredShifts, workplaceNames);
+            try {
+                assignments = shiftAssignmentService.assignEmployees(
+                        workDate, formAssignments, employees, preferredShifts, workplaceNames);
+            } catch (Exception e) {
+                logger.error("Failed to assign employees: {}", e.getMessage(), e);
+                errors.add("シフト割り当て中にエラーが発生しました: " + e.getMessage());
+            }
 
             // 人数集計
             Map<Long, Map<String, Object>> availableEmployees = new HashMap<>();
@@ -212,7 +265,7 @@ public class ShiftController {
                 Map<String, Object> employeeData = availableEmployees.computeIfAbsent(employeeId, k -> new HashMap<>());
                 employeeData.putIfAbsent("name", employee.getNameKanji() != null ? employee.getNameKanji() : "不明");
                 employeeData.putIfAbsent("skillLevel", employee.getSkillLevel() != null ? employee.getSkillLevel().toString() : "UNKNOWN");
-                List<String> timeSlots = (List<String>) employeeData.computeIfAbsent("timeSlots", k -> new ArrayList<>());
+                List<String> timeSlots = (List<String>) employeeData.computeIfAbsent("timeSlots", k -> new ArrayList<String>());
                 timeSlots.add(shift.getTimeSlot().toString());
             }
 
@@ -233,34 +286,30 @@ public class ShiftController {
                     .filter(e -> ((List<String>) e.get("timeSlots")).contains("PM"))
                     .count());
 
+            // モデルにデータをセット
             model.addAttribute("workDate", workDate);
-            model.addAttribute("formData", allParams);
             model.addAttribute("assignments", assignments);
             model.addAttribute("availableEmployees", availableEmployees);
             model.addAttribute("employeeCounts", employeeCounts);
-            model.addAttribute("workplaces", workplaceRepository.findAll());
+            model.addAttribute("workplaces", workplaceRepository.findAll().stream()
+                    .filter(w -> w != null && w.getId() != null)
+                    .collect(Collectors.toList()));
+            if (!errors.isEmpty()) {
+                model.addAttribute("error", String.join("; ", errors));
+            }
+            logger.debug("Returning assignments: {}", assignments);
             return "employees/shift_assignment_result";
-
         } catch (Exception e) {
-            logger.error("Failed to process shift assignment: {}", e.getMessage(), e);
-            model.addAttribute("error", "シフト割り当て処理中にエラーが発生しました: " + e.getClass().getSimpleName() + " - " + e.getMessage());
-            return setupFormModel(model, workDate != null ? workDate : LocalDate.now());
+            logger.error("Unexpected error in assignShifts: {}", e.getMessage(), e);
+            errors.add("予期しないエラーが発生しました: " + e.getMessage());
+            model.addAttribute("error", String.join("; ", errors));
+            model.addAttribute("workDate", workDate != null ? workDate : LocalDate.now());
+            model.addAttribute("workplaces", workplaceRepository.findAll().stream()
+                    .filter(w -> w != null && w.getId() != null)
+                    .collect(Collectors.toList()));
+            model.addAttribute("firstHouseTasks", taskRepository.findByIdBetween(1L, 5L));
+            model.addAttribute("secondHouseTasks", taskRepository.findByIdBetween(6L, 10L));
+            return "employees/shift_assignment_form";
         }
-    }
-
-    private String setupFormModel(Model model, LocalDate workDate) {
-        model.addAttribute("workDate", workDate);
-        try {
-            model.addAttribute("workplaces", workplaceRepository.findAll());
-            model.addAttribute("houseTasks", taskRepository.findByIdLessThanEqual(10L));
-            model.addAttribute("sortingTask", taskRepository.findByName("選果").orElse(null));
-        } catch (Exception e) {
-            logger.error("Failed to load workplaces or tasks: {}", e.getMessage(), e);
-            model.addAttribute("error", model.containsAttribute("error")
-                    ? model.getAttribute("error") + "; 職場またはタスクの取得に失敗しました: " + e.getMessage()
-                    : "職場またはタスクの取得に失敗しました: " + e.getMessage());
-        }
-        return "employees/shift_assignment_form";
     }
 }
-    

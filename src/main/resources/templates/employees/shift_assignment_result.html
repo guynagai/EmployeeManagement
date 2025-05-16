@@ -3,79 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <title>シフト割り当て結果</title>
-    <style>
-        .error {
-            color: red;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .section {
-            margin-bottom: 15px;
-        }
-        .employee-list {
-            margin-left: 20px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            margin-top: 10px;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-    </style>
 </head>
 <body>
     <h1>シフト割り当て結果</h1>
-    <div th:if="${error}" class="error" th:text="${error}"></div>
-    <div>
-        <h2>作業日: <span th:text="${workDate.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd'))}"></span></h2>
+    <div th:if="${error != null}">
+        <p style="color: red;" th:text="${error}"></p>
     </div>
-
-    <div class="section" th:each="entry : ${assignments}">
-        <h3 th:text="${entry.value.workplaceName}"></h3>
-        <table>
-            <tr>
-                <th>項目</th>
-                <th>詳細</th>
-            </tr>
-            <tr>
-                <td>タスク</td>
-                <td>
-                    <span th:if="${entry.value.tasks != null and not #lists.isEmpty(entry.value.tasks)}"
-                          th:text="${T(java.lang.String).join(', ', entry.value.tasks)}"></span>
-                    <span th:if="${entry.value.tasks == null or #lists.isEmpty(entry.value.tasks)}">なし</span>
-                </td>
-            </tr>
-            <tr>
-                <td>AM 人数</td>
-                <td th:text="${entry.value.amCount}"></td>
-            </tr>
-            <tr>
-                <td>PM 人数</td>
-                <td th:text="${entry.value.pmCount}"></td>
-            </tr>
-            <tr>
-                <td>割り当て社員</td>
-                <td>
-                    <div class="employee-list" th:if="${entry.value.assignedEmployees != null and not #lists.isEmpty(entry.value.assignedEmployees)}">
-                        <div th:each="employee : ${entry.value.assignedEmployees}">
-                            <span th:text="${employee.name} + ' (' + ${employee.skillLevel} + ', ' + ${employee.timeSlot} + ')'"></span>
-                        </div>
-                    </div>
-                    <div th:if="${entry.value.assignedEmployees == null or #lists.isEmpty(entry.value.assignedEmployees)}">
-                        なし
-                    </div>
-                </td>
-            </tr>
-        </table>
+    <h2 th:text="'作業日: ' + ${workDate}"></h2>
+    <div th:each="assignment : ${assignments}">
+        <h3 th:text="${assignment.value.workplaceName}"></h3>
+        <p>作業名: <span th:text="${assignment.value.taskNames != null and !assignment.value.taskNames.empty} ? ${#strings.listJoin(assignment.value.taskNames, ', ')} : 'なし'"></span></p>
+        <div>
+            <h4>AM</h4>
+            <p>必要人数: <span th:text="${assignment.value.amCount}"></span></p>
+            <p>割り当て社員: <span th:each="employee, iterStat : ${assignment.value.amEmployees}" th:text="${employee.nameKanji + (iterStat.last ? '' : ', ')}"></span></p>
+            <p th:if="${assignment.value.amShortage > 0}" th:text="'不足人数: ' + ${assignment.value.amShortage}"></p>
+        </div>
+        <div>
+            <h4>PM</h4>
+            <p>必要人数: <span th:text="${assignment.value.pmCount}"></span></p>
+            <p>割り当て社員: <span th:each="employee, iterStat : ${assignment.value.pmEmployees}" th:text="${employee.nameKanji + (iterStat.last ? '' : ', ')}"></span></p>
+            <p th:if="${assignment.value.pmShortage > 0}" th:text="'不足人数: ' + ${assignment.value.pmShortage}"></p>
+        </div>
     </div>
-
-    <a href="/admin/shifts/assign">戻る</a>
+    <h2>出勤予定社員</h2>
+    <table>
+        <tr>
+            <th>社員名</th>
+            <th>スキルレベル</th>
+            <th>出勤時間帯</th>
+        </tr>
+        <tr th:each="employee : ${availableEmployees}">
+            <td th:text="${employee.value.name}"></td>
+            <td th:text="${employee.value.skillLevel}"></td>
+            <td th:text="${employee.value.timeSlots != null and !employee.value.timeSlots.empty} ? ${#strings.listJoin(employee.value.timeSlots, ', ')} : 'なし'"></td>
+        </tr>
+    </table>
+    <h2>人数集計</h2>
+    <p>リーダー: <span th:text="${employeeCounts.leader}"></span></p>
+    <p>一般: <span th:text="${employeeCounts.general}"></span></p>
+    <p>新人: <span th:text="${employeeCounts.newcomer}"></span></p>
+    <p>AM合計: <span th:text="${employeeCounts.amTotal}"></span></p>
+    <p>PM合計: <span th:text="${employeeCounts.pmTotal}"></span></p>
+    <a th:href="@{/admin/shifts/assign}">戻る</a>
 </body>
 </html>

@@ -7,12 +7,15 @@ C:.
 „   .project
 „   build.gradle
 „   EmployeeManagement.txt
+„   EmployeeManagement_tree.txt
 „   gradlew
 „   gradlew.bat
 „   HELP.md
 „   settings.gradle
 „   
 „¥„Ÿ.gradle
+„   „   file-system.probe
+„   „   
 „   „¥„Ÿ8.13
 „   „   „   gc.properties
 „   „   „   
@@ -22,6 +25,7 @@ C:.
 „   „   „       sha1-checksums.bin
 „   „   „       
 „   „   „¥„ŸexecutionHistory
+„   „   „       executionHistory.bin
 „   „   „       executionHistory.lock
 „   „   „       
 „   „   „¥„Ÿexpanded
@@ -29,12 +33,15 @@ C:.
 „   „   „       last-build.bin
 „   „   „       
 „   „   „¥„ŸfileHashes
+„   „   „       fileHashes.bin
 „   „   „       fileHashes.lock
+„   „   „       resourceHashesCache.bin
 „   „   „       
 „   „   „¤„ŸvcsMetadata
 „   „¥„ŸbuildOutputCleanup
 „   „       buildOutputCleanup.lock
 „   „       cache.properties
+„   „       outputFiles.bin
 „   „       
 „   „¤„Ÿvcs-1
 „           gc.properties
@@ -46,6 +53,7 @@ C:.
 „¥„Ÿbin
 „   „¥„Ÿmain
 „   „   „   application.properties
+„   „   „   logback-spring.xml
 „   „   „   
 „   „   „¥„Ÿcom
 „   „   „   „¤„Ÿexample
@@ -53,20 +61,59 @@ C:.
 „   „   „           „   EmployeeManagementApplication.class
 „   „   „           „   
 „   „   „           „¥„Ÿcontroller
+„   „   „           „       GlobalExceptionHandler.class
 „   „   „           „       PartTimeEmployeeController.class
+„   „   „           „       ShiftController.class
+„   „   „           „       
+„   „   „           „¥„Ÿdto
+„   „   „           „       AssignedEmployee.class
+„   „   „           „       ShiftAssignmentDto.class
 „   „   „           „       
 „   „   „           „¥„Ÿentity
+„   „   „           „       PartTimeEmployee$SkillLevel.class
 „   „   „           „       PartTimeEmployee.class
+„   „   „           „       PreferredShift$DayOfWeek.class
+„   „   „           „       PreferredShift$TimeSlot.class
+„   „   „           „       PreferredShift.class
+„   „   „           „       ShiftAssignment.class
+„   „   „           „       Task.class
+„   „   „           „       Workplace.class
 „   „   „           „       
 „   „   „           „¥„Ÿrepository
 „   „   „           „       PartTimeEmployeeRepository.class
+„   „   „           „       PreferredShiftRepository.class
+„   „   „           „       ShiftAssignmentRepository.class
+„   „   „           „       TaskRepository.class
+„   „   „           „       WorkplaceRepository.class
 „   „   „           „       
 „   „   „           „¤„Ÿservice
 „   „   „                   PartTimeEmployeeService.class
+„   „   „                   PartTimeEmployeeServiceImpl.class
+„   „   „                   ShiftAssignmentService.class
+„   „   „                   ShiftService.class
 „   „   „                   
+„   „   „¥„Ÿstatic
+„   „   „   „¥„Ÿ.well-known
+„   „   „   „   „¤„Ÿappspecific
+„   „   „   „           com.chrome.devtools.json
+„   „   „   „           
+„   „   „   „¤„Ÿcss
+„   „   „           style.css
+„   „   „           
 „   „   „¤„Ÿtemplates
+„   „       „   error.html
+„   „       „   
 „   „       „¤„Ÿemployees
+„   „               add.html
+„   „               available_employees.html
+„   „               edit.html
+„   „               employee_form.html
+„   „               employee_list.html
+„   „               form.html
 „   „               list.html
+„   „               shift_assignment_form.html
+„   „               shift_assignment_result.bak
+„   „               shift_assignment_result.html
 „   „               
 „   „¤„Ÿtest
 „       „¤„Ÿcom
@@ -74,11 +121,131 @@ C:.
 „               „¤„Ÿapp
 „                       EmployeeManagementApplicationTests.class
 „                       
+„¥„Ÿbuild
+„   „   resolvedMainClassName
+„   „   
+„   „¥„Ÿclasses
+„   „   „¤„Ÿjava
+„   „       „¥„Ÿmain
+„   „       „   „¤„Ÿcom
+„   „       „       „¤„Ÿexample
+„   „       „           „¤„Ÿapp
+„   „       „               „   EmployeeManagementApplication.class
+„   „       „               „   
+„   „       „               „¥„Ÿcontroller
+„   „       „               „       PartTimeEmployeeController.class
+„   „       „               „       ShiftController.class
+„   „       „               „       
+„   „       „               „¥„Ÿentity
+„   „       „               „       PartTimeEmployee$SkillLevel.class
+„   „       „               „       PartTimeEmployee.class
+„   „       „               „       PreferredShift$DayOfWeek.class
+„   „       „               „       PreferredShift$TimeSlot.class
+„   „       „               „       PreferredShift.class
+„   „       „               „       ShiftAssignment.class
+„   „       „               „       Task.class
+„   „       „               „       Workplace.class
+„   „       „               „       
+„   „       „               „¥„Ÿrepository
+„   „       „               „       PartTimeEmployeeRepository.class
+„   „       „               „       PreferredShiftRepository.class
+„   „       „               „       ShiftAssignmentRepository.class
+„   „       „               „       TaskRepository.class
+„   „       „               „       WorkplaceRepository.class
+„   „       „               „       
+„   „       „               „¤„Ÿservice
+„   „       „                       PartTimeEmployeeService.class
+„   „       „                       PartTimeEmployeeServiceImpl.class
+„   „       „                       ShiftService.class
+„   „       „                       
+„   „       „¤„Ÿtest
+„   „           „¤„Ÿcom
+„   „               „¤„Ÿexample
+„   „                   „¤„Ÿapp
+„   „                           EmployeeManagementApplicationTests.class
+„   „                           
+„   „¥„Ÿgenerated
+„   „   „¤„Ÿsources
+„   „       „¥„ŸannotationProcessor
+„   „       „   „¤„Ÿjava
+„   „       „       „¥„Ÿmain
+„   „       „       „¤„Ÿtest
+„   „       „¤„Ÿheaders
+„   „           „¤„Ÿjava
+„   „               „¥„Ÿmain
+„   „               „¤„Ÿtest
+„   „¥„Ÿlibs
+„   „       EmployeeManagement-0.0.1-SNAPSHOT-plain.jar
+„   „       EmployeeManagement-0.0.1-SNAPSHOT.jar
+„   „       
+„   „¥„Ÿreports
+„   „   „¤„Ÿtests
+„   „       „¤„Ÿtest
+„   „           „   index.html
+„   „           „   
+„   „           „¥„Ÿclasses
+„   „           „       com.example.app.EmployeeManagementApplicationTests.html
+„   „           „       
+„   „           „¥„Ÿcss
+„   „           „       base-style.css
+„   „           „       style.css
+„   „           „       
+„   „           „¥„Ÿjs
+„   „           „       report.js
+„   „           „       
+„   „           „¤„Ÿpackages
+„   „                   com.example.app.html
+„   „                   
+„   „¥„Ÿresources
+„   „   „¤„Ÿmain
+„   „       „   application.properties
+„   „       „   
+„   „       „¥„Ÿstatic
+„   „       „   „¤„Ÿcss
+„   „       „           style.css
+„   „       „           
+„   „       „¤„Ÿtemplates
+„   „           „   error.html
+„   „           „   
+„   „           „¤„Ÿemployees
+„   „                   add.html
+„   „                   available_employees.html
+„   „                   edit.html
+„   „                   employee_form.html
+„   „                   employee_list.html
+„   „                   form.html
+„   „                   list.html
+„   „                   shift_assignment_form.html
+„   „                   shift_assignment_result.html
+„   „                   
+„   „¥„Ÿtest-results
+„   „   „¤„Ÿtest
+„   „       „   TEST-com.example.app.EmployeeManagementApplicationTests.xml
+„   „       „   
+„   „       „¤„Ÿbinary
+„   „               output.bin
+„   „               output.bin.idx
+„   „               results.bin
+„   „               
+„   „¤„Ÿtmp
+„       „¥„ŸbootJar
+„       „       MANIFEST.MF
+„       „       
+„       „¥„ŸcompileJava
+„       „¥„ŸcompileTestJava
+„       „¥„Ÿjar
+„       „       MANIFEST.MF
+„       „       
+„       „¤„Ÿtest
 „¥„Ÿgradle
 „   „¤„Ÿwrapper
 „           gradle-wrapper.jar
 „           gradle-wrapper.properties
 „           
+„¥„Ÿlogs
+„       app.log
+„       filtered.log
+„       
 „¤„Ÿsrc
     „¥„Ÿmain
     „   „¥„Ÿjava
@@ -88,24 +255,60 @@ C:.
     „   „               „   EmployeeManagementApplication.java
     „   „               „   
     „   „               „¥„Ÿcontroller
+    „   „               „       GlobalExceptionHandler.java
     „   „               „       PartTimeEmployeeController.java
+    „   „               „       ShiftController.java
+    „   „               „       
+    „   „               „¥„Ÿdto
+    „   „               „       AssignedEmployee.java
+    „   „               „       ShiftAssignmentDto.java
     „   „               „       
     „   „               „¥„Ÿentity
     „   „               „       PartTimeEmployee.java
+    „   „               „       PreferredShift.java
+    „   „               „       ShiftAssignment.java
+    „   „               „       Task.java
+    „   „               „       Workplace.java
     „   „               „       
     „   „               „¥„Ÿrepository
     „   „               „       PartTimeEmployeeRepository.java
+    „   „               „       PreferredShiftRepository.java
+    „   „               „       ShiftAssignmentRepository.java
+    „   „               „       TaskRepository.java
+    „   „               „       WorkplaceRepository.java
     „   „               „       
     „   „               „¤„Ÿservice
     „   „                       PartTimeEmployeeService.java
+    „   „                       PartTimeEmployeeServiceImpl.java
+    „   „                       ShiftAssignmentService.java
+    „   „                       ShiftService.java
     „   „                       
     „   „¤„Ÿresources
     „       „   application.properties
+    „       „   logback-spring.xml
     „       „   
     „       „¥„Ÿstatic
+    „       „   „¥„Ÿ.well-known
+    „       „   „   „¤„Ÿappspecific
+    „       „   „           com.chrome.devtools.json
+    „       „   „           
+    „       „   „¤„Ÿcss
+    „       „           style.css
+    „       „           
     „       „¤„Ÿtemplates
+    „           „   error.html
+    „           „   
     „           „¤„Ÿemployees
+    „                   add.html
+    „                   available_employees.html
+    „                   edit.html
+    „                   employee_form.html
+    „                   employee_list.html
+    „                   form.html
     „                   list.html
+    „                   shift_assignment_form.html
+    „                   shift_assignment_result.bak
+    „                   shift_assignment_result.html
     „                   
     „¤„Ÿtest
         „¤„Ÿjava

@@ -4,84 +4,70 @@
     <meta charset="UTF-8">
     <title>シフト割り当て</title>
     <style>
-        .error {
-            color: red;
+        .task-container {
+            display: block;
+            margin-bottom: 15px;
+        }
+        .task-group {
+            margin-bottom: 10px;
+        }
+        .task-group label {
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
+            display: block;
         }
-        .section {
-            margin-bottom: 10px;
-        }
-        .task-row {
+        .task-item {
+            display: inline-block;
+            margin-right: 20px;
             margin-bottom: 5px;
         }
-        .task-row input[type="checkbox"] {
+        .task-item input[type="checkbox"] {
             margin-right: 5px;
-        }
-        .task-row label {
-            margin-right: 15px;
-        }
-        .personnel {
-            margin-top: 5px;
-        }
-        .personnel label {
-            margin-right: 10px;
-        }
-        .personnel input[type="number"] {
-            width: 60px;
-            margin-right: 10px;
-        }
-        button {
-            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <h1>シフト割り当て</h1>
-    <div th:if="${error}" class="error" th:text="${error}"></div>
-    <div th:if="${sortingTask == null}" class="error">タスク「選果」が見つかりません。データベースを確認してください。</div>
+    <div th:if="${error != null}">
+        <p style="color: red;" th:text="${error}"></p>
+    </div>
     <form th:action="@{/admin/shifts/assign}" method="post">
-        <div class="section">
-            <label>作業日: </label>
-            <input type="date" name="workDate" th:value="${workDate.format(T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd'))}" required />
-        </div>
-
-        <div class="section" th:each="workplace : ${workplaces}" th:if="${workplace.name != '選果'}">
+        <label for="workDate">作業日:</label>
+        <input type="date" id="workDate" name="workDate" th:value="${workDate}"/>
+        <div th:each="workplace, iterStat : ${workplaces}">
             <h2 th:text="${workplace.name}"></h2>
-            <div class="task-row" th:with="tasks1=${houseTasks.subList(0, #lists.size(houseTasks) > 5 ? 5 : #lists.size(houseTasks))}">
-                <span th:each="task : ${tasks1}">
-                    <input type="checkbox" th:id="'task-' + ${workplace.id} + '-' + ${task.id}" th:value="${task.id}" th:name="'assignments[' + ${workplace.id} + '][tasks][]'" />
-                    <label th:for="'task-' + ${workplace.id} + '-' + ${task.id}" th:text="${task.name}"></label>
-                </span>
+            <input type="hidden" th:name="'assignments[' + ${iterStat.index} + '][workplaceId]'" th:value="${workplace.id}"/>
+            <div th:unless="${workplace.name == '選果場'}">
+                <h3>タスク（複数選択可）:</h3>
+                <div class="task-container">
+                    <div class="task-group">
+                        <label>主要作業:</label>
+                        <div class="task-item" th:each="task : ${firstHouseTasks}">
+                            <input type="checkbox" th:name="'assignments[' + ${iterStat.index} + '][tasks][]'" th:value="${task.id}"/>
+                            <label th:text="${task.name}"></label>
+                        </div>
+                    </div>
+                    <div class="task-group">
+                        <label>その他作業:</label>
+                        <div class="task-item" th:each="task : ${secondHouseTasks}">
+                            <input type="checkbox" th:name="'assignments[' + ${iterStat.index} + '][tasks][]'" th:value="${task.id}"/>
+                            <label th:text="${task.name}"></label>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="task-row" th:if="${#lists.size(houseTasks) > 5}" th:with="tasks2=${houseTasks.subList(5, #lists.size(houseTasks))}">
-                <span th:each="task : ${tasks2}">
-                    <input type="checkbox" th:id="'task-' + ${workplace.id} + '-' + ${task.id}" th:value="${task.id}" th:name="'assignments[' + ${workplace.id} + '][tasks][]'" />
-                    <label th:for="'task-' + ${workplace.id} + '-' + ${task.id}" th:text="${task.name}"></label>
-                </span>
+            <div th:if="${workplace.name == '選果場'}">
+                <p>タスク: 選果（固定）</p>
             </div>
-            <div class="personnel">
-                <label>AM 人数: </label>
-                <input type="number" th:name="'assignments[' + ${workplace.id} + '][am][count]'" min="0" value="0" />
-                <label>PM 人数: </label>
-                <input type="number" th:name="'assignments[' + ${workplace.id} + '][pm][count]'" min="0" value="0" />
+            <div>
+                <h3>人数:</h3>
+                <label>AM:</label>
+                <input type="number" th:name="'assignments[' + ${iterStat.index} + '][am][count]'" min="0" value="0"/>
+                <label>PM:</label>
+                <input type="number" th:name="'assignments[' + ${iterStat.index} + '][pm][count]'" min="0" value="0"/>
             </div>
         </div>
-
-        <div class="section" th:each="workplace : ${workplaces}" th:if="${workplace.name == '選果'}">
-            <h2>選果 (固定)</h2>
-            <input type="hidden" th:name="'assignments[' + ${workplace.id} + '][tasks][]'" th:value="${sortingTask?.id}" />
-            <div class="personnel">
-                <label>AM 人数: </label>
-                <input type="number" th:name="'assignments[' + ${workplace.id} + '][am][count]'" min="0" value="0" />
-                <label>PM 人数: </label>
-                <input type="number" th:name="'assignments[' + ${workplace.id} + '][pm][count]'" min="0" value="0" />
-            </div>
-        </div>
-
         <button type="submit">割り当て</button>
     </form>
-
-    <a href="/admins">戻る</a>
 </body>
 </html>
