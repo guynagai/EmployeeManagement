@@ -148,6 +148,7 @@ public class ShiftController {
             Model model) {
         logger.info("Showing shift assignment form for workDate: {}", workDate);
         workDate = workDate != null ? workDate : getDefaultWorkDate();
+        logger.debug("Accessing /admin/shifts/assign for workDate: {}", workDate);
         logger.debug("Checking repository beans: workplaceRepository={}, taskRepository={}", 
                      workplaceRepository != null, taskRepository != null);
         model.addAttribute("workDate", workDate);

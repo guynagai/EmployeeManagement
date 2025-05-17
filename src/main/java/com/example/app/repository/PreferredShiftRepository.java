@@ -11,4 +11,5 @@ import com.example.app.entity.PreferredShift;
 public interface PreferredShiftRepository extends JpaRepository<PreferredShift, Long> {
     List<PreferredShift> findByEmployeeId(Long employeeId);
     List<PreferredShift> findByDayOfWeek(PreferredShift.DayOfWeek dayOfWeek);
+    void deleteByEmployeeId(Long employeeId);
 }

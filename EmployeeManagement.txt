@@ -7,7 +7,6 @@ C:.
 „   .project
 „   build.gradle
 „   EmployeeManagement.txt
-„   EmployeeManagement_tree.txt
 „   gradlew
 „   gradlew.bat
 „   HELP.md
@@ -61,12 +60,14 @@ C:.
 „   „   „           „   EmployeeManagementApplication.class
 „   „   „           „   
 „   „   „           „¥„Ÿcontroller
+„   „   „           „       AvailableEmployeesController.class
 „   „   „           „       GlobalExceptionHandler.class
 „   „   „           „       PartTimeEmployeeController.class
 „   „   „           „       ShiftController.class
 „   „   „           „       
 „   „   „           „¥„Ÿdto
 „   „   „           „       AssignedEmployee.class
+„   „   „           „       AvailableEmployee.class
 „   „   „           „       ShiftAssignmentDto.class
 „   „   „           „       
 „   „   „           „¥„Ÿentity
@@ -87,12 +88,18 @@ C:.
 „   „   „           „       WorkplaceRepository.class
 „   „   „           „       
 „   „   „           „¤„Ÿservice
+„   „   „                   AvailableEmployeeService.class
+„   „   „                   AvailableEmployeeServiceImpl.class
 „   „   „                   PartTimeEmployeeService.class
 „   „   „                   PartTimeEmployeeServiceImpl.class
+„   „   „                   PreferredShiftService.class
+„   „   „                   PreferredShiftServiceImpl.class
 „   „   „                   ShiftAssignmentService.class
 „   „   „                   ShiftService.class
 „   „   „                   
 „   „   „¥„Ÿstatic
+„   „   „   „   favicon.ico
+„   „   „   „   
 „   „   „   „¥„Ÿ.well-known
 „   „   „   „   „¤„Ÿappspecific
 „   „   „   „           com.chrome.devtools.json
@@ -101,6 +108,7 @@ C:.
 „   „   „           style.css
 „   „   „           
 „   „   „¤„Ÿtemplates
+„   „       „   admin_menu.html
 „   „       „   error.html
 „   „       „   
 „   „       „¤„Ÿemployees
@@ -108,7 +116,6 @@ C:.
 „   „               available_employees.html
 „   „               edit.html
 „   „               employee_form.html
-„   „               employee_list.html
 „   „               form.html
 „   „               list.html
 „   „               shift_assignment_form.html
@@ -243,6 +250,11 @@ C:.
 „           gradle-wrapper.properties
 „           
 „¥„Ÿlogs
+„       app.2025-05-16-01-26.log
+„       app.2025-05-16-01-27.log
+„       app.2025-05-16-01-28.log
+„       app.2025-05-16-01-29.log
+„       app.2025-05-16.log
 „       app.log
 „       filtered.log
 „       
@@ -255,12 +267,14 @@ C:.
     „   „               „   EmployeeManagementApplication.java
     „   „               „   
     „   „               „¥„Ÿcontroller
+    „   „               „       AvailableEmployeesController.java
     „   „               „       GlobalExceptionHandler.java
     „   „               „       PartTimeEmployeeController.java
     „   „               „       ShiftController.java
     „   „               „       
     „   „               „¥„Ÿdto
     „   „               „       AssignedEmployee.java
+    „   „               „       AvailableEmployee.java
     „   „               „       ShiftAssignmentDto.java
     „   „               „       
     „   „               „¥„Ÿentity
@@ -278,8 +292,12 @@ C:.
     „   „               „       WorkplaceRepository.java
     „   „               „       
     „   „               „¤„Ÿservice
+    „   „                       AvailableEmployeeService.java
+    „   „                       AvailableEmployeeServiceImpl.java
     „   „                       PartTimeEmployeeService.java
     „   „                       PartTimeEmployeeServiceImpl.java
+    „   „                       PreferredShiftService.java
+    „   „                       PreferredShiftServiceImpl.java
     „   „                       ShiftAssignmentService.java
     „   „                       ShiftService.java
     „   „                       
@@ -288,6 +306,8 @@ C:.
     „       „   logback-spring.xml
     „       „   
     „       „¥„Ÿstatic
+    „       „   „   favicon.ico
+    „       „   „   
     „       „   „¥„Ÿ.well-known
     „       „   „   „¤„Ÿappspecific
     „       „   „           com.chrome.devtools.json
@@ -296,6 +316,7 @@ C:.
     „       „           style.css
     „       „           
     „       „¤„Ÿtemplates
+    „           „   admin_menu.html
     „           „   error.html
     „           „   
     „           „¤„Ÿemployees
@@ -303,7 +324,6 @@ C:.
     „                   available_employees.html
     „                   edit.html
     „                   employee_form.html
-    „                   employee_list.html
     „                   form.html
     „                   list.html
     „                   shift_assignment_form.html

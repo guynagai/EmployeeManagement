@@ -1,37 +1,56 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>出勤予定者リスト</title>
-    <link rel="stylesheet" th:href="@{/css/style.css}"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
 </head>
 <body>
-    <header>出勤予定者リスト</header>
-    <div class="container">
+    <div class="container mt-4">
         <h1>出勤予定者リスト</h1>
-        <p th:if="${workDate}" th:text="'対象日: ' + ${#temporals.format(workDate, 'yyyy-MM-dd')}"></p>
-        <div th:if="${error}" class="error" th:text="${error}"></div>
         
-        <h2>人数概要</h2>
-        <table class="summary-table">
-            <tr>
-                <th>リーダー</th>
-                <th>一般</th>
-                <th>新人</th>
-                <th>午前合計</th>
-                <th>午後合計</th>
-            </tr>
-            <tr>
-                <td th:text="${employeeCounts.leader ?: 0}"></td>
-                <td th:text="${employeeCounts.general ?: 0}"></td>
-                <td th:text="${employeeCounts.newcomer ?: 0}"></td>
-                <td th:text="${employeeCounts.amTotal ?: 0}"></td>
-                <td th:text="${employeeCounts.pmTotal ?: 0}"></td>
-            </tr>
+        <!-- 日付選択フォーム -->
+        <form th:action="@{/admin/available-employees}" method="get" class="mb-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-auto">
+                    <label for="workDate" class="col-form-label">対象日</label>
+                </div>
+                <div class="col-auto">
+                    <input type="date" id="workDate" name="workDate" th:value="${workDate}" class="form-control" required />
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-primary">表示</button>
+                </div>
+            </div>
+        </form>
+
+        <!-- 人数概要 -->
+        <h3>人数概要</h3>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>リーダー</th>
+                    <th>一般</th>
+                    <th>新人</th>
+                    <th>午前合計</th>
+                    <th>午後合計</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td th:text="${summary?.leaderCount ?: 0}"></td>
+                    <td th:text="${summary?.generalCount ?: 0}"></td>
+                    <td th:text="${summary?.newcomerCount ?: 0}"></td>
+                    <td th:text="${summary?.amTotal ?: 0}"></td>
+                    <td th:text="${summary?.pmTotal ?: 0}"></td>
+                </tr>
+            </tbody>
         </table>
 
-        <h2>従業員リスト</h2>
-        <table class="employee-table">
+        <!-- 従業員リスト -->
+        <h3>従業員リスト</h3>
+        <table class="table table-striped">
             <thead>
                 <tr>
                     <th>従業員ID</th>
@@ -41,19 +60,21 @@
                 </tr>
             </thead>
             <tbody>
-                <tr th:each="entry : ${availableEmployees}">
-                    <td th:text="${entry.key}"></td>
-                    <td th:text="${entry.value.name}"></td>
-                    <td th:text="${entry.value.skillLevel}"></td>
-                    <td th:text="${entry.value.timeSlots}"></td>
+                <tr th:each="employee : ${employees}" th:if="${employees != null}">
+                    <td th:text="${employee.employeeId} ?: '-'"></td>
+                    <td th:text="${employee.name} ?: '-'"></td>
+                    <td th:text="${employee.skillLevel} ?: '-'"></td>
+                    <td th:text="${employee.preferredTimeSlots != null ? employee.preferredTimeSlots : '-'}"></td>
                 </tr>
-                <tr th:if="${#maps.isEmpty(availableEmployees)}">
-                    <td colspan="4">出勤予定者がありません。</td>
+                <tr th:if="${employees == null or employees.isEmpty}">
+                    <td colspan="4" class="text-center">出勤予定者がありません。</td>
                 </tr>
             </tbody>
         </table>
-        
-        <a th:href="@{/admin/menu}">管理者メニューに戻る</a>
+
+        <!-- 戻るボタン -->
+        <a th:href="@{/admin}" class="btn btn-secondary">管理者メニューに戻る</a>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

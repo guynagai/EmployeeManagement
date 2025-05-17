@@ -50,3 +50,17 @@ button {
 button:hover {
     background: #0056b3;
 }
+/* 社員編集・追加フォームのスタイル */
+.form-group {
+    max-width: 500px; /* フォームの最大幅を制限 */
+}
+.form-control {
+    width: 100%; /* すべての入力ボックスを親コンテナの幅に合わせる */
+    box-sizing: border-box; /* パディングやボーダーを幅に含める */
+}
+.form-check {
+    margin-bottom: 0.5rem; /* ラジオボタン間の間隔 */
+}
+.form-check-label {
+    margin-left: 0.5rem; /* ラジオボタンとラベルの間隔 */
+}
