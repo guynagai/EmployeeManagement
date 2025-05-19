@@ -255,6 +255,8 @@ C:.
 Да      app.2025-05-16-01-28.log
 Да      app.2025-05-16-01-29.log
 Да      app.2025-05-16.log
+Да      app.2025-05-17.log
+Да      app.2025-05-18.log
 Да      app.log
 Да      filtered.log
 Да      

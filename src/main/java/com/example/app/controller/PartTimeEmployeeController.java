@@ -3,6 +3,8 @@ package com.example.app.controller;
 import java.time.LocalDate;
 import java.time.Period;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,7 @@ import com.example.app.service.PartTimeEmployeeService;
 @Controller
 @RequestMapping("/admin/employees")
 public class PartTimeEmployeeController {
+    private static final Logger logger = LoggerFactory.getLogger(PartTimeEmployeeController.class);
     private final PartTimeEmployeeService service;
 
     public PartTimeEmployeeController(PartTimeEmployeeService service) {
@@ -29,11 +32,22 @@ public class PartTimeEmployeeController {
 
     @GetMapping({"", "/"})
     public String list(@RequestParam(defaultValue = "0") int page, Model model) {
-        Pageable pageable = PageRequest.of(page, 10);
-        Page<PartTimeEmployee> employeePage = service.findAll(pageable);
-        model.addAttribute("employees", employeePage.getContent());
-        model.addAttribute("page", employeePage);
-        return "employees/list";
+        logger.info("Listing employees, page: {}, size: 10", page);
+        try {
+            Pageable pageable = PageRequest.of(page, 10);
+            Page<PartTimeEmployee> employeePage = service.findAll(pageable);
+            model.addAttribute("employees", employeePage.getContent());
+            model.addAttribute("page", employeePage);
+            model.addAttribute("currentPage", employeePage.getNumber());
+            model.addAttribute("totalPages", employeePage.getTotalPages());
+            model.addAttribute("totalItems", employeePage.getTotalElements());
+            logger.debug("Employees count: {}, Total pages: {}", employeePage.getContent().size(), employeePage.getTotalPages());
+            return "employees/list";
+        } catch (Exception e) {
+            logger.error("Failed to load employees: {}", e.getMessage(), e);
+            model.addAttribute("error", "社員一覧の取得に失敗しました: " + e.getMessage());
+            return "employees/list";
+        }
     }
 
     @GetMapping("/edit/{id}")

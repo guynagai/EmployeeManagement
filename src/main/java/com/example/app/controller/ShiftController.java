@@ -32,9 +32,11 @@ import com.example.app.repository.PreferredShiftRepository;
 import com.example.app.repository.TaskRepository;
 import com.example.app.repository.WorkplaceRepository;
 import com.example.app.service.ShiftAssignmentService;
+import com.example.app.service.ShiftService;
 
 @Controller
 @RequestMapping("/admin")
+@SuppressWarnings({"unchecked", "unused"})
 public class ShiftController {
     private static final Logger logger = LoggerFactory.getLogger(ShiftController.class);
 
@@ -53,6 +55,9 @@ public class ShiftController {
     @Autowired
     private ShiftAssignmentService shiftAssignmentService;
 
+    @Autowired
+    private ShiftService shiftService;
+
     private LocalDate getDefaultWorkDate() {
         LocalDate today = LocalDate.now();
         if (today.getDayOfWeek() == DayOfWeek.SATURDAY) {
@@ -69,71 +74,29 @@ public class ShiftController {
 
     @GetMapping("/shifts/preferred")
     public String showPreferredShifts(
-            @RequestParam(value = "workDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workDate,
+            @RequestParam(value = "workDate", required = false) String workDate,
             Model model) {
         logger.info("Showing preferred shifts for workDate: {}", workDate);
-        workDate = workDate != null ? workDate : getDefaultWorkDate();
+        workDate = workDate != null ? workDate : getDefaultWorkDate().toString();
         model.addAttribute("workDate", workDate);
         try {
-            PreferredShift.DayOfWeek dayOfWeek;
-            try {
-                dayOfWeek = PreferredShift.DayOfWeek.valueOf(
-                        workDate.getDayOfWeek().toString().toUpperCase(Locale.ENGLISH));
-            } catch (IllegalArgumentException e) {
-                logger.warn("No shifts available for day: {}", workDate.getDayOfWeek(), e);
-                model.addAttribute("error", "指定された曜日にシフトがありません: " + workDate.getDayOfWeek());
+            Map<String, Object> result = shiftService.getAvailableEmployees(workDate);
+            if (result.containsKey("error")) {
+                logger.warn("Error from ShiftService: {}", result.get("error"));
+                model.addAttribute("error", result.get("error"));
                 return "employees/available_employees";
             }
-            List<PreferredShift> preferredShifts = preferredShiftRepository.findByDayOfWeek(dayOfWeek);
-            logger.debug("Found {} preferred shifts for dayOfWeek={}", preferredShifts.size(), dayOfWeek);
-            preferredShifts.forEach(shift -> logger.trace("Shift: employeeId={}, timeSlot={}", shift.getEmployeeId(), shift.getTimeSlot()));
-            if (preferredShifts.isEmpty()) {
-                logger.warn("No preferred shifts found for dayOfWeek={}", dayOfWeek);
-                model.addAttribute("error", "指定された曜日の出勤希望シフトがありません。");
-            }
-            Map<Long, PartTimeEmployee> employees = partTimeEmployeeRepository.findAll().stream()
-                    .filter(e -> e != null && e.getId() != null)
-                    .collect(Collectors.toMap(PartTimeEmployee::getId, e -> e));
-            Map<Long, Map<String, Object>> availableEmployees = new HashMap<>();
-            for (PreferredShift shift : preferredShifts) {
-                Long employeeId = shift.getEmployeeId();
-                PartTimeEmployee employee = employees.get(employeeId);
-                if (employee == null) {
-                    logger.warn("Employee not found for ID: {}", employeeId);
-                    continue;
-                }
-                Map<String, Object> employeeData = availableEmployees.computeIfAbsent(employeeId, k -> new HashMap<>());
-                employeeData.putIfAbsent("name", employee.getNameKanji() != null ? employee.getNameKanji() : "不明");
-                employeeData.putIfAbsent("skillLevel", employee.getSkillLevel() != null ? employee.getSkillLevel().toString() : "UNKNOWN");
-                List<String> timeSlots = (List<String>) employeeData.computeIfAbsent("timeSlots", k -> new ArrayList<>());
-                if (!timeSlots.contains(shift.getTimeSlot().toString())) {
-                    timeSlots.add(shift.getTimeSlot().toString());
-                }
-            }
-            Map<String, Long> employeeCounts = new HashMap<>();
-            employeeCounts.put("leader", availableEmployees.values().stream()
-                    .filter(e -> "LEADER".equals(e.get("skillLevel")))
-                    .count());
-            employeeCounts.put("general", availableEmployees.values().stream()
-                    .filter(e -> "GENERAL".equals(e.get("skillLevel")))
-                    .count());
-            employeeCounts.put("newcomer", availableEmployees.values().stream()
-                    .filter(e -> "NEWCOMER".equals(e.get("skillLevel")))
-                    .count());
-            employeeCounts.put("amTotal", preferredShifts.stream()
-                    .filter(shift -> shift.getTimeSlot() == PreferredShift.TimeSlot.AM)
-                    .map(PreferredShift::getEmployeeId)
-                    .distinct()
-                    .count());
-            employeeCounts.put("pmTotal", preferredShifts.stream()
-                    .filter(shift -> shift.getTimeSlot() == PreferredShift.TimeSlot.PM)
-                    .map(PreferredShift::getEmployeeId)
-                    .distinct()
-                    .count());
-            model.addAttribute("availableEmployees", availableEmployees);
-            model.addAttribute("employeeCounts", employeeCounts);
-            logger.debug("Model attributes: workDate={}, availableEmployees.size={}, employeeCounts={}",
-                    workDate, availableEmployees.size(), employeeCounts);
+            List<PartTimeEmployee> employees = (List<PartTimeEmployee>) result.get("employees");
+            List<PreferredShift> preferredShifts = (List<PreferredShift>) result.get("preferredShifts");
+            model.addAttribute("employees", employees != null ? employees : new ArrayList<>());
+            model.addAttribute("preferredShifts", preferredShifts != null ? preferredShifts : new ArrayList<>());
+            model.addAttribute("leaderCount", result.getOrDefault("leaderCount", 0L));
+            model.addAttribute("generalCount", result.getOrDefault("generalCount", 0L));
+            model.addAttribute("newcomerCount", result.getOrDefault("newcomerCount", 0L));
+            model.addAttribute("totalCountAM", result.getOrDefault("totalCountAM", 0L));
+            model.addAttribute("totalCountPM", result.getOrDefault("totalCountPM", 0L));
+            logger.debug("Model attributes: workDate={}, employees.size={}",
+                    workDate, employees != null ? employees.size() : 0);
             return "employees/available_employees";
         } catch (Exception e) {
             logger.error("Failed to load preferred shifts: {}", e.getMessage(), e);
@@ -148,33 +111,20 @@ public class ShiftController {
             Model model) {
         logger.info("Showing shift assignment form for workDate: {}", workDate);
         workDate = workDate != null ? workDate : getDefaultWorkDate();
-        logger.debug("Accessing /admin/shifts/assign for workDate: {}", workDate);
-        logger.debug("Checking repository beans: workplaceRepository={}, taskRepository={}", 
-                     workplaceRepository != null, taskRepository != null);
         model.addAttribute("workDate", workDate);
         try {
-            logger.debug("Fetching workplaces...");
             List<Workplace> workplaces = workplaceRepository.findAll()
                     .stream()
                     .filter(w -> w != null && w.getId() != null)
                     .collect(Collectors.toList());
-            logger.debug("Fetched {} workplaces: {}", workplaces.size(), workplaces);
-            for (Workplace wp : workplaces) {
-                logger.debug("Workplace: id={}, name={}", wp.getId(), wp.getName());
-            }
             model.addAttribute("workplaces", workplaces);
 
-            logger.debug("Fetching first house tasks (id 1-5)...");
             List<Task> firstHouseTasks = taskRepository.findByIdBetween(1L, 5L);
-            logger.debug("Fetched {} first house tasks: {}", firstHouseTasks.size(), firstHouseTasks);
             model.addAttribute("firstHouseTasks", firstHouseTasks);
 
-            logger.debug("Fetching second house tasks (id 6-10)...");
             List<Task> secondHouseTasks = taskRepository.findByIdBetween(6L, 10L);
-            logger.debug("Fetched {} second house tasks: {}", secondHouseTasks.size(), secondHouseTasks);
             model.addAttribute("secondHouseTasks", secondHouseTasks);
 
-            // Add employee counts for form validation
             PreferredShift.DayOfWeek dayOfWeek;
             try {
                 dayOfWeek = PreferredShift.DayOfWeek.valueOf(
@@ -198,19 +148,21 @@ public class ShiftController {
                 employeeData.putIfAbsent("name", employee.getNameKanji() != null ? employee.getNameKanji() : "不明");
                 employeeData.putIfAbsent("skillLevel", employee.getSkillLevel() != null ? employee.getSkillLevel().toString() : "UNKNOWN");
                 List<String> timeSlots = (List<String>) employeeData.computeIfAbsent("timeSlots", k -> new ArrayList<>());
-                if (!timeSlots.contains(shift.getTimeSlot().toString())) {
+                if (shift.getTimeSlot() != null && !timeSlots.contains(shift.getTimeSlot().toString())) {
                     timeSlots.add(shift.getTimeSlot().toString());
                 }
             }
             Map<String, Long> employeeCounts = new HashMap<>();
             employeeCounts.put("amTotal", preferredShifts.stream()
-                    .filter(shift -> shift.getTimeSlot() == PreferredShift.TimeSlot.AM)
+                    .filter(shift -> shift.getTimeSlot() != null && shift.getTimeSlot() == PreferredShift.TimeSlot.AM)
                     .map(PreferredShift::getEmployeeId)
+                    .filter(id -> id != null)
                     .distinct()
                     .count());
             employeeCounts.put("pmTotal", preferredShifts.stream()
-                    .filter(shift -> shift.getTimeSlot() == PreferredShift.TimeSlot.PM)
+                    .filter(shift -> shift.getTimeSlot() != null && shift.getTimeSlot() == PreferredShift.TimeSlot.PM)
                     .map(PreferredShift::getEmployeeId)
+                    .filter(id -> id != null)
                     .distinct()
                     .count());
             model.addAttribute("employeeCounts", employeeCounts);
@@ -229,14 +181,12 @@ public class ShiftController {
             Model model) {
         logger.info("Processing shift assignment for workDate: {}", workDate);
         workDate = workDate != null ? workDate : getDefaultWorkDate();
-        logger.debug("Raw form parameters: {}", allParams);
         Map<Long, ShiftAssignmentDto> assignments = new HashMap<>();
         List<String> errors = new ArrayList<>();
         try {
             Map<Long, String> workplaceNames = workplaceRepository.findAll().stream()
                     .filter(w -> w != null && w.getId() != null)
                     .collect(Collectors.toMap(Workplace::getId, Workplace::getName));
-            logger.debug("Workplace names: {}", workplaceNames);
             Map<Long, Map<String, Object>> formAssignments = new HashMap<>();
 
             // Initialize workplaces
@@ -248,7 +198,6 @@ public class ShiftController {
                     workplaceData.put("tasks", new ArrayList<String>());
                     workplaceData.put("taskIds", new ArrayList<Long>());
                     formAssignments.put(workplace.getId(), workplaceData);
-                    logger.debug("Initialized workplaceId={} with default am_count=0, pm_count=0, tasks={}", workplace.getId(), workplaceData.get("tasks"));
                 }
             }
 
@@ -257,7 +206,6 @@ public class ShiftController {
             for (Map.Entry<String, String> entry : allParams.entrySet()) {
                 String key = entry.getKey();
                 String value = entry.getValue();
-                logger.debug("Processing key: {}, value: {}", key, value);
 
                 // workplaceId
                 Matcher workplaceIdMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[workplaceId\\]").matcher(key);
@@ -265,16 +213,13 @@ public class ShiftController {
                     try {
                         Long workplaceId = Long.parseLong(value.trim());
                         if (!workplaceNames.containsKey(workplaceId)) {
-                            logger.error("Invalid workplaceId: {}", workplaceId);
                             errors.add("無効な職場ID: " + workplaceId);
                             continue;
                         }
                         int index = Integer.parseInt(workplaceIdMatcher.group(1));
                         indexToWorkplaceId.put(index, workplaceId);
                         formAssignments.computeIfAbsent(workplaceId, k -> new HashMap<>()).put("index", index);
-                        logger.debug("Set workplaceId={} for index={}", workplaceId, index);
                     } catch (NumberFormatException e) {
-                        logger.error("Invalid workplaceId value for key={}: {}", key, value, e);
                         errors.add("職場IDが無効です: " + value);
                     }
                 }
@@ -286,7 +231,6 @@ public class ShiftController {
                         int index = Integer.parseInt(countMatcher.group(1));
                         Long workplaceId = indexToWorkplaceId.get(index);
                         if (workplaceId == null || !workplaceNames.containsKey(workplaceId)) {
-                            logger.error("No valid workplaceId found for index: {}", index);
                             errors.add("無効なインデックス: " + index);
                             continue;
                         }
@@ -294,26 +238,22 @@ public class ShiftController {
                         Map<String, Object> workplaceData = formAssignments.get(workplaceId);
                         int count = value.isEmpty() ? 0 : Integer.parseInt(value.trim());
                         if (count < 0) {
-                            logger.error("Negative count value for workplaceId={}, timeSlot={}: {}", workplaceId, timeSlot, count);
                             errors.add("人数は0以上でなければなりません: " + count + " (職場ID: " + workplaceId + ")");
                             continue;
                         }
                         workplaceData.put(timeSlot.toLowerCase() + "_count", count);
-                        logger.debug("Set {} for workplaceId={}, count={}", timeSlot.toLowerCase() + "_count", workplaceId, count);
                     } catch (NumberFormatException e) {
-                        logger.error("Invalid count value for key={}: {}", key, value, e);
                         errors.add("人数の入力値が無効です: " + value);
                     }
                 }
 
-                // Tasks (skip for sorting facility)
+                // Tasks
                 Matcher taskMatcher = Pattern.compile("assignments\\[(\\d+)\\]\\[tasks\\]\\[\\]").matcher(key);
                 if (taskMatcher.matches()) {
                     try {
                         int index = Integer.parseInt(taskMatcher.group(1));
                         Long workplaceId = indexToWorkplaceId.get(index);
                         if (workplaceId == null || !workplaceNames.containsKey(workplaceId)) {
-                            logger.error("No valid workplaceId found for task index: {}", index);
                             errors.add("無効なインデックス: " + index);
                             continue;
                         }
@@ -327,19 +267,15 @@ public class ShiftController {
                                     if (taskId >= 1 && taskId <= 10 && !taskIds.contains(taskId)) {
                                         taskNames.add(task.getName());
                                         taskIds.add(taskId);
-                                        logger.debug("Added taskId={} ({}) for workplaceId={}", taskId, task.getName(), workplaceId);
                                     }
                                 });
                             }
                         }
                     } catch (NumberFormatException e) {
-                        logger.error("Invalid task ID for key={}: {}", key, value, e);
                         errors.add("タスクIDが無効です: " + value);
                     }
                 }
             }
-
-            logger.debug("Processed formAssignments: {}", formAssignments);
 
             // Get preferred shifts
             PreferredShift.DayOfWeek dayOfWeek;
@@ -347,17 +283,13 @@ public class ShiftController {
                 dayOfWeek = PreferredShift.DayOfWeek.valueOf(
                         workDate.getDayOfWeek().toString().toUpperCase(Locale.ENGLISH));
             } catch (IllegalArgumentException e) {
-                logger.warn("No shifts available for day: {}", workDate.getDayOfWeek(), e);
-                dayOfWeek = null;
                 errors.add("指定された曜日にシフトがありません: " + workDate.getDayOfWeek());
+                dayOfWeek = null;
             }
             List<PreferredShift> preferredShifts = dayOfWeek != null
                     ? preferredShiftRepository.findByDayOfWeek(dayOfWeek)
                     : new ArrayList<>();
-            logger.debug("Found {} preferred shifts for dayOfWeek={}: {}", 
-                        preferredShifts.size(), dayOfWeek, preferredShifts);
             if (preferredShifts.isEmpty()) {
-                logger.warn("No preferred shifts found for dayOfWeek={}", dayOfWeek);
                 errors.add("指定された曜日の出勤希望シフトがありません。");
             }
             Map<Long, PartTimeEmployee> employees = partTimeEmployeeRepository.findAll().stream()
@@ -369,7 +301,6 @@ public class ShiftController {
                 assignments = shiftAssignmentService.assignEmployees(
                         workDate, formAssignments, employees, preferredShifts, workplaceNames);
             } catch (Exception e) {
-                logger.error("Failed to assign employees: {}", e.getMessage(), e);
                 errors.add("シフト割り当て中にエラーが発生しました: " + e.getMessage());
             }
 
@@ -381,10 +312,8 @@ public class ShiftController {
             if (!errors.isEmpty()) {
                 model.addAttribute("error", String.join("; ", errors));
             }
-            logger.debug("Returning assignments: {}", assignments);
             return "employees/shift_assignment_result";
         } catch (Exception e) {
-            logger.error("Unexpected error in assignShifts: {}", e.getMessage(), e);
             errors.add("予期しないエラーが発生しました: " + e.getMessage());
             model.addAttribute("error", String.join("; ", errors));
             model.addAttribute("workDate", workDate != null ? workDate : getDefaultWorkDate());
