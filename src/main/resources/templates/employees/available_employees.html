@@ -8,15 +8,24 @@
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         .error { color: red; }
+        .date-input { margin-bottom: 10px; }
     </style>
 </head>
 <body>
     <h1>出勤予定者リスト</h1>
-    <div>
-        <h2>対象日: <span th:text="${workDate} ?: '未指定'"></span></h2>
+    <div class="date-input">
+        <form th:action="@{/admin/available-employees}" method="get">
+            <label for="workDate">作業日を選択:</label>
+            <input type="date" id="workDate" name="workDate" th:value="${workDate}"/>
+            <button type="submit">表示</button>
+        </form>
         <div th:if="${error != null}" class="error">
             <p th:text="${error}"></p>
         </div>
+    </div>
+
+    <div>
+        <h2>対象日: <span th:text="${workDate} ?: '未指定'"></span></h2>
     </div>
 
     <h2>人数概要</h2>
