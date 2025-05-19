@@ -1,50 +1,56 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
     <title>シフト割り当て結果</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .error { color: red; }
+    </style>
 </head>
 <body>
     <h1>シフト割り当て結果</h1>
-    <div th:if="${error != null}">
-        <p style="color: red;" th:text="${error}"></p>
-    </div>
-    <h2 th:text="'作業日: ' + ${workDate}"></h2>
-    <div th:each="assignment : ${assignments}">
-        <h3 th:text="${assignment.value.workplaceName}"></h3>
-        <p>作業名: <span th:text="${assignment.value.taskNames != null and !assignment.value.taskNames.empty} ? ${#strings.listJoin(assignment.value.taskNames, ', ')} : 'なし'"></span></p>
+
+    <div th:if="${error}" th:text="${error}" class="error"></div>
+
+    <div th:each="workplace : ${workplaces}">
+        <h2>作業名: <span th:text="${workplace.name} ?: '不明'"></span></h2>
         <div>
-            <h4>AM</h4>
-            <p>必要人数: <span th:text="${assignment.value.amCount}"></span></p>
-            <p>割り当て社員: <span th:each="employee, iterStat : ${assignment.value.amEmployees}" th:text="${employee.nameKanji + (iterStat.last ? '' : ', ')}"></span></p>
-            <p th:if="${assignment.value.amShortage > 0}" th:text="'不足人数: ' + ${assignment.value.amShortage}"></p>
+            <h3>AM</h3>
+            <p>必要人数: <span th:text="${assignments[workplace.id]?.amCount} ?: 0"></span></p>
+            <p>割り当て社員: 
+                <span th:if="${assignments[workplace.id]?.amEmployees?.size() > 0}">
+                    <span th:each="employee, iterStat : ${assignments[workplace.id].amEmployees}"
+                          th:text="${employee.nameKanji} + (${iterStat.last} ? '' : ', ')"></span>
+                </span>
+                <span th:unless="${assignments[workplace.id]?.amEmployees?.size() > 0}">
+                    なし
+                </span>
+            </p>
         </div>
         <div>
-            <h4>PM</h4>
-            <p>必要人数: <span th:text="${assignment.value.pmCount}"></span></p>
-            <p>割り当て社員: <span th:each="employee, iterStat : ${assignment.value.pmEmployees}" th:text="${employee.nameKanji + (iterStat.last ? '' : ', ')}"></span></p>
-            <p th:if="${assignment.value.pmShortage > 0}" th:text="'不足人数: ' + ${assignment.value.pmShortage}"></p>
+            <h3>PM</h3>
+            <p>必要人数: <span th:text="${assignments[workplace.id]?.pmCount} ?: 0"></span></p>
+            <p>割り当て社員: 
+                <span th:if="${assignments[workplace.id]?.pmEmployees?.size() > 0}">
+                    <span th:each="employee, iterStat : ${assignments[workplace.id].pmEmployees}"
+                          th:text="${employee.nameKanji} + (${iterStat.last} ? '' : ', ')"></span>
+                </span>
+                <span th:unless="${assignments[workplace.id]?.pmEmployees?.size() > 0}">
+                    なし
+                </span>
+            </p>
         </div>
     </div>
-    <h2>出勤予定社員</h2>
-    <table>
-        <tr>
-            <th>社員名</th>
-            <th>スキルレベル</th>
-            <th>出勤時間帯</th>
-        </tr>
-        <tr th:each="employee : ${availableEmployees}">
-            <td th:text="${employee.value.name}"></td>
-            <td th:text="${employee.value.skillLevel}"></td>
-            <td th:text="${employee.value.timeSlots != null and !employee.value.timeSlots.empty} ? ${#strings.listJoin(employee.value.timeSlots, ', ')} : 'なし'"></td>
-        </tr>
-    </table>
+
     <h2>人数集計</h2>
-    <p>リーダー: <span th:text="${employeeCounts.leader}"></span></p>
-    <p>一般: <span th:text="${employeeCounts.general}"></span></p>
-    <p>新人: <span th:text="${employeeCounts.newcomer}"></span></p>
-    <p>AM合計: <span th:text="${employeeCounts.amTotal}"></span></p>
-    <p>PM合計: <span th:text="${employeeCounts.pmTotal}"></span></p>
-    <a th:href="@{/admin/shifts/assign}">戻る</a>
+    <p>リーダー: <span th:text="${employeeCounts.leader} ?: 0"></span></p>
+    <p>一般: <span th:text="${employeeCounts.general} ?: 0"></span></p>
+    <p>新人: <span th:text="${employeeCounts.newcomer} ?: 0"></span></p>
+    <p>AM合計: <span th:text="${employeeCounts.amTotal} ?: 0"></span></p>
+    <p>PM合計: <span th:text="${employeeCounts.pmTotal} ?: 0"></span></p>
+
+    <a th:href="@{/admin/menu}">戻る</a>
 </body>
 </html>

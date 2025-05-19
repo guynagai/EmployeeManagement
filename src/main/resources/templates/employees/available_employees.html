@@ -1,82 +1,51 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>出勤予定者リスト</title>
-    <meta charset="UTF-8">
+    <title>出勤予定者一覧</title>
     <style>
-        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
         th { background-color: #f2f2f2; }
         .error { color: red; }
-        .date-input { margin-bottom: 10px; }
+        .counts { margin-bottom: 20px; }
     </style>
 </head>
 <body>
-    <h1>出勤予定者リスト</h1>
-    <div class="date-input">
-        <form th:action="@{/admin/available-employees}" method="get">
-            <label for="workDate">作業日を選択:</label>
-            <input type="date" id="workDate" name="workDate" th:value="${workDate}"/>
-            <button type="submit">表示</button>
-        </form>
-        <div th:if="${error != null}" class="error">
-            <p th:text="${error}"></p>
-        </div>
+    <h1>出勤予定者一覧</h1>
+
+    <div th:if="${error}" th:text="${error}" class="error"></div>
+
+    <form th:action="@{/admin/shifts/preferred}" method="get">
+        <label>作業日:</label>
+        <input type="date" name="workDate" th:value="${workDate}" required>
+        <button type="submit">検索</button>
+    </form>
+
+    <div class="counts">
+        <h2>人数概要</h2>
+        <p>リーダー: <span th:text="${employeeCounts.leader} ?: 0"></span></p>
+        <p>一般: <span th:text="${employeeCounts.general} ?: 0"></span></p>
+        <p>新人: <span th:text="${employeeCounts.newcomer} ?: 0"></span></p>
+        <p>AM合計: <span th:text="${employeeCounts.amTotal} ?: 0"></span></p>
+        <p>PM合計: <span th:text="${employeeCounts.pmTotal} ?: 0"></span></p>
     </div>
 
-    <div>
-        <h2>対象日: <span th:text="${workDate} ?: '未指定'"></span></h2>
-    </div>
-
-    <h2>人数概要</h2>
     <table>
         <tr>
-            <th>リーダー</th>
-            <th>一般</th>
-            <th>新人</th>
-            <th>午前合計</th>
-            <th>午後合計</th>
+            <th>社員名</th>
+            <th>スキルレベル</th>
+            <th>出勤時間帯</th>
         </tr>
-        <tr>
-            <td th:text="${leaderCount} ?: 0"></td>
-            <td th:text="${generalCount} ?: 0"></td>
-            <td th:text="${newcomerCount} ?: 0"></td>
-            <td th:text="${totalCountAM} ?: 0"></td>
-            <td th:text="${totalCountPM} ?: 0"></td>
+        <tr th:each="shift : ${preferredShifts}">
+            <td th:text="${employees[shift.employeeId]?.nameKanji} ?: '不明'"></td>
+            <td th:text="${employees[shift.employeeId]?.skillLevel} ?: '不明'"></td>
+            <td th:text="${shift.timeSlot} ?: '不明'"></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(preferredShifts)}">
+            <td colspan="3">出勤予定者がいません。</td>
         </tr>
     </table>
 
-    <h2>従業員リスト</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>従業員ID</th>
-                <th>名前</th>
-                <th>スキルレベル</th>
-                <th>希望時間帯</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="employee : ${employees}" th:if="${employee != null}">
-                <td th:text="${employee.id} ?: '不明'"></td>
-                <td th:text="${employee.nameKanji} ?: '不明'"></td>
-                <td th:text="${employee.skillLevel} ?: '不明'"></td>
-                <td>
-                    <span th:each="shift : ${preferredShifts}" 
-                          th:if="${shift != null and shift.employeeId != null and shift.employeeId == employee.id}" 
-                          th:text="${shift.timeSlot} + ', '" 
-                          th:remove="tag">
-                    </span>
-                </td>
-            </tr>
-            <tr th:if="${employees == null or #lists.isEmpty(employees)}">
-                <td colspan="4">出勤予定者がありません。</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <div style="margin-top: 20px;">
-        <a href="/admin/menu">管理者メニューに戻る</a>
-    </div>
+    <a th:href="@{/admin/menu}">戻る</a>
 </body>
 </html>

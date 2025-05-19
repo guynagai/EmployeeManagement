@@ -80,31 +80,80 @@ public class ShiftController {
         workDate = workDate != null ? workDate : getDefaultWorkDate().toString();
         model.addAttribute("workDate", workDate);
         try {
-            Map<String, Object> result = shiftService.getAvailableEmployees(workDate);
-            if (result.containsKey("error")) {
-                logger.warn("Error from ShiftService: {}", result.get("error"));
-                model.addAttribute("error", result.get("error"));
-                return "employees/available_employees";
+            // 日付をLocalDateに変換
+            LocalDate parsedWorkDate = LocalDate.parse(workDate);
+            PreferredShift.DayOfWeek dayOfWeek;
+            try {
+                dayOfWeek = PreferredShift.DayOfWeek.valueOf(
+                        parsedWorkDate.getDayOfWeek().toString().toUpperCase(Locale.ENGLISH));
+            } catch (IllegalArgumentException e) {
+                logger.warn("Invalid day of week for workDate: {}", workDate, e);
+                dayOfWeek = null;
             }
-            List<PartTimeEmployee> employees = (List<PartTimeEmployee>) result.get("employees");
-            List<PreferredShift> preferredShifts = (List<PreferredShift>) result.get("preferredShifts");
-            model.addAttribute("employees", employees != null ? employees : new ArrayList<>());
-            model.addAttribute("preferredShifts", preferredShifts != null ? preferredShifts : new ArrayList<>());
-            model.addAttribute("leaderCount", result.getOrDefault("leaderCount", 0L));
-            model.addAttribute("generalCount", result.getOrDefault("generalCount", 0L));
-            model.addAttribute("newcomerCount", result.getOrDefault("newcomerCount", 0L));
-            model.addAttribute("totalCountAM", result.getOrDefault("totalCountAM", 0L));
-            model.addAttribute("totalCountPM", result.getOrDefault("totalCountPM", 0L));
-            logger.debug("Model attributes: workDate={}, employees.size={}",
-                    workDate, employees != null ? employees.size() : 0);
+
+            // 出勤希望シフトを取得
+            List<PreferredShift> preferredShifts = dayOfWeek != null
+                    ? preferredShiftRepository.findByDayOfWeek(dayOfWeek)
+                    : new ArrayList<>();
+            Map<Long, PartTimeEmployee> employees = partTimeEmployeeRepository.findAll().stream()
+                    .filter(e -> e != null && e.getId() != null)
+                    .collect(Collectors.toMap(PartTimeEmployee::getId, e -> e));
+
+            // 人数概要を計算
+            Map<String, Long> employeeCounts = new HashMap<>();
+            employeeCounts.put("amTotal", preferredShifts.stream()
+                    .filter(shift -> shift.getTimeSlot() != null && shift.getTimeSlot() == PreferredShift.TimeSlot.AM)
+                    .map(PreferredShift::getEmployeeId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .count());
+            employeeCounts.put("pmTotal", preferredShifts.stream()
+                    .filter(shift -> shift.getTimeSlot() != null && shift.getTimeSlot() == PreferredShift.TimeSlot.PM)
+                    .map(PreferredShift::getEmployeeId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .count());
+            employeeCounts.put("leader", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "リーダー".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+            employeeCounts.put("general", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "一般".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+            employeeCounts.put("newcomer", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "新人".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+
+            model.addAttribute("employees", employees);
+            model.addAttribute("preferredShifts", preferredShifts);
+            model.addAttribute("employeeCounts", employeeCounts);
+            logger.debug("Model attributes: workDate={}, employees.size={}, preferredShifts.size={}",
+                    workDate, employees.size(), preferredShifts.size());
             return "employees/available_employees";
         } catch (Exception e) {
             logger.error("Failed to load preferred shifts: {}", e.getMessage(), e);
+            Map<String, Long> employeeCounts = new HashMap<>();
+            employeeCounts.put("leader", 0L);
+            employeeCounts.put("general", 0L);
+            employeeCounts.put("newcomer", 0L);
+            employeeCounts.put("amTotal", 0L);
+            employeeCounts.put("pmTotal", 0L);
             model.addAttribute("error", "出勤予定者の取得に失敗しました: " + e.getMessage());
+            model.addAttribute("employees", new HashMap<Long, PartTimeEmployee>());
+            model.addAttribute("preferredShifts", new ArrayList<PreferredShift>());
+            model.addAttribute("employeeCounts", employeeCounts);
             return "employees/available_employees";
         }
     }
-
+    
     @GetMapping("/shifts/assign")
     public String showAssignmentForm(
             @RequestParam(value = "workDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workDate,
@@ -165,10 +214,34 @@ public class ShiftController {
                     .filter(id -> id != null)
                     .distinct()
                     .count());
+            employeeCounts.put("leader", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "リーダー".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+            employeeCounts.put("general", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "一般".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+            employeeCounts.put("newcomer", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "新人".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
             model.addAttribute("employeeCounts", employeeCounts);
+            model.addAttribute("availableEmployees", availableEmployees);
         } catch (Exception e) {
             logger.error("Failed to load workplaces or tasks: {}", e.getMessage(), e);
             model.addAttribute("error", "職場またはタスクの取得に失敗しました: " + e.getMessage());
+            model.addAttribute("workplaces", new ArrayList<Workplace>());
+            model.addAttribute("firstHouseTasks", new ArrayList<Task>());
+            model.addAttribute("secondHouseTasks", new ArrayList<Task>());
+            model.addAttribute("employeeCounts", new HashMap<String, Long>());
+            model.addAttribute("availableEmployees", new HashMap<Long, Map<String, Object>>());
             return "employees/shift_assignment_form";
         }
         return "employees/shift_assignment_form";
@@ -183,6 +256,7 @@ public class ShiftController {
         workDate = workDate != null ? workDate : getDefaultWorkDate();
         Map<Long, ShiftAssignmentDto> assignments = new HashMap<>();
         List<String> errors = new ArrayList<>();
+        Map<Long, List<PartTimeEmployee>> assignedEmployees = new HashMap<>();
         try {
             Map<Long, String> workplaceNames = workplaceRepository.findAll().stream()
                     .filter(w -> w != null && w.getId() != null)
@@ -296,6 +370,39 @@ public class ShiftController {
                     .filter(e -> e != null && e.getId() != null)
                     .collect(Collectors.toMap(PartTimeEmployee::getId, e -> e));
 
+            // Calculate employee counts
+            Map<String, Long> employeeCounts = new HashMap<>();
+            employeeCounts.put("amTotal", preferredShifts.stream()
+                    .filter(shift -> shift.getTimeSlot() != null && shift.getTimeSlot() == PreferredShift.TimeSlot.AM)
+                    .map(PreferredShift::getEmployeeId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .count());
+            employeeCounts.put("pmTotal", preferredShifts.stream()
+                    .filter(shift -> shift.getTimeSlot() != null && shift.getTimeSlot() == PreferredShift.TimeSlot.PM)
+                    .map(PreferredShift::getEmployeeId)
+                    .filter(id -> id != null)
+                    .distinct()
+                    .count());
+            employeeCounts.put("leader", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "リーダー".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+            employeeCounts.put("general", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "一般".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+            employeeCounts.put("newcomer", preferredShifts.stream()
+                    .filter(shift -> shift.getEmployeeId() != null)
+                    .map(shift -> employees.get(shift.getEmployeeId()))
+                    .filter(employee -> employee != null && "新人".equals(employee.getSkillLevel()))
+                    .distinct()
+                    .count());
+
             // Assign employees
             try {
                 assignments = shiftAssignmentService.assignEmployees(
@@ -304,11 +411,29 @@ public class ShiftController {
                 errors.add("シフト割り当て中にエラーが発生しました: " + e.getMessage());
             }
 
+            // Prepare assigned employees for display
+            for (Map.Entry<Long, ShiftAssignmentDto> entry : assignments.entrySet()) {
+                Long workplaceId = entry.getKey();
+                ShiftAssignmentDto dto = entry.getValue();
+                List<PartTimeEmployee> workplaceEmployees = new ArrayList<>();
+                if (dto.getAmEmployees() != null) {
+                    workplaceEmployees.addAll(dto.getAmEmployees());
+                }
+                if (dto.getPmEmployees() != null) {
+                    workplaceEmployees.addAll(dto.getPmEmployees());
+                }
+                assignedEmployees.put(workplaceId, workplaceEmployees);
+            }
+
             model.addAttribute("workDate", workDate);
             model.addAttribute("assignments", assignments);
             model.addAttribute("workplaces", workplaceRepository.findAll().stream()
                     .filter(w -> w != null && w.getId() != null)
                     .collect(Collectors.toList()));
+            model.addAttribute("preferredShifts", preferredShifts);
+            model.addAttribute("employees", employees);
+            model.addAttribute("employeeCounts", employeeCounts);
+            model.addAttribute("assignedEmployees", assignedEmployees);
             if (!errors.isEmpty()) {
                 model.addAttribute("error", String.join("; ", errors));
             }
@@ -322,7 +447,16 @@ public class ShiftController {
                     .collect(Collectors.toList()));
             model.addAttribute("firstHouseTasks", taskRepository.findByIdBetween(1L, 5L));
             model.addAttribute("secondHouseTasks", taskRepository.findByIdBetween(6L, 10L));
-            model.addAttribute("employeeCounts", new HashMap<String, Long>());
+            Map<String, Long> employeeCounts = new HashMap<>();
+            employeeCounts.put("amTotal", 0L);
+            employeeCounts.put("pmTotal", 0L);
+            employeeCounts.put("leader", 0L);
+            employeeCounts.put("general", 0L);
+            employeeCounts.put("newcomer", 0L);
+            model.addAttribute("employeeCounts", employeeCounts);
+            model.addAttribute("preferredShifts", new ArrayList<PreferredShift>());
+            model.addAttribute("employees", new HashMap<Long, PartTimeEmployee>());
+            model.addAttribute("assignedEmployees", new HashMap<Long, List<PartTimeEmployee>>());
             return "employees/shift_assignment_form";
         }
     }
